@@ -1,0 +1,18 @@
+Category,Sport,Name,Unit,IsDerived,Formula,BestScoreMethod,TrialCount
+Speed,Tennis,5m Sprint,seconds,false,,lowest,3
+Speed,Tennis,10m Sprint,seconds,false,,lowest,3
+Power,Tennis,CMJ,cm,false,,highest,3
+Agility,Tennis,505 COD,seconds,false,,lowest,3
+Agility,Tennis,COD Deficit,seconds,true,505 COD - 10m Sprint,lowest,1
+Speed,Basketball,20m Sprint,seconds,false,,lowest,3
+Power,Basketball,Vertical Jump,cm,false,,highest,3
+Strength,Basketball,Bench Press 1RM,kg,false,,highest,3
+Speed,Soccer,10m Sprint,seconds,false,,lowest,3
+Speed,Soccer,30m Sprint,seconds,false,,lowest,3
+Power,Soccer,CMJ,cm,false,,highest,3
+Endurance,Soccer,Yo-Yo IR1,meters,false,,highest,1
+Speed,Swimming,50m Freestyle,seconds,false,,lowest,3
+Endurance,Swimming,400m Freestyle,seconds,false,,lowest,1
+Speed,Track & Field,60m Sprint,seconds,false,,lowest,3
+Power,Track & Field,Standing Long Jump,cm,false,,highest,3
+Strength,Track & Field,Back Squat 1RM,kg,false,,highest,3

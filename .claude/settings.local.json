@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:authjs.dev)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --turbopack --use-npm --yes)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(npx next build)",
+      "Bash(npx next dev -p 5555)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(node -e:*)",
+      "Bash(npx next dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(del \"C:\\\\Users\\\\tayaw\\\\Desktop\\\\Projects\\\\athlete-performance\\\\scripts\\\\create-airtable-tables.mjs\")",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest run:*)",
+      "Bash(powershell:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm run seed:*)"
+    ]
+  }
+}

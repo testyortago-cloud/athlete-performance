@@ -1,0 +1,15 @@
+Sport,Name,SortOrder
+Tennis,Speed,0
+Tennis,Power,1
+Tennis,Agility,2
+Basketball,Speed,0
+Basketball,Power,1
+Basketball,Strength,2
+Soccer,Speed,0
+Soccer,Power,1
+Soccer,Endurance,2
+Swimming,Speed,0
+Swimming,Endurance,1
+Track & Field,Speed,0
+Track & Field,Power,1
+Track & Field,Strength,2
