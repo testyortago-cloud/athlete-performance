@@ -32,7 +32,7 @@ export function Tooltip({ content, children, side = 'right', className }: Toolti
 
   return (
     <div
-      className="relative inline-flex"
+      className="relative flex"
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}

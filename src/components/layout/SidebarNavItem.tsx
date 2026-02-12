@@ -71,7 +71,7 @@ export function SidebarNavItem({
             {content}
           </Link>
         ) : (
-          content
+          <div className="w-full">{content}</div>
         )}
       </Tooltip>
     );

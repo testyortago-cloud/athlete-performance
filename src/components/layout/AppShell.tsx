@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Header } from './Header';
@@ -20,13 +20,22 @@ export function AppShell({ children }: AppShellProps) {
   const isTablet = useMediaQuery('(min-width: 768px)');
   const isMobile = !isTablet;
 
-  // Set initial sidebar state based on viewport
+  // Only auto-adjust sidebar when viewport actually crosses a breakpoint (resize),
+  // not on initial mount — this preserves the user's persisted collapse preference.
+  const prevViewport = useRef<string | null>(null);
+
   useEffect(() => {
-    if (isDesktop) {
-      setCollapsed(false);
-    } else if (isTablet) {
-      setCollapsed(true);
+    const viewport = isDesktop ? 'desktop' : isTablet ? 'tablet' : 'mobile';
+
+    if (prevViewport.current !== null && prevViewport.current !== viewport) {
+      if (viewport === 'desktop') {
+        setCollapsed(false);
+      } else if (viewport === 'tablet') {
+        setCollapsed(true);
+      }
     }
+
+    prevViewport.current = viewport;
   }, [isDesktop, isTablet, setCollapsed]);
 
   return (
