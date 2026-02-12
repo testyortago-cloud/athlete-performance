@@ -20,6 +20,7 @@ export interface Metric {
   name: string;
   unit: string;
   isDerived: boolean;
+  hasReps: boolean;
   formula: string | null;
   bestScoreMethod: BestScoreMethod;
   trialCount: number;
@@ -32,6 +33,7 @@ export interface MetricFormData {
   name: string;
   unit: string;
   isDerived: boolean;
+  hasReps: boolean;
   formula?: string;
   bestScoreMethod: BestScoreMethod;
   trialCount: number;

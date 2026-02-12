@@ -23,6 +23,9 @@ export interface TrialData {
   trial1: number | null;
   trial2: number | null;
   trial3: number | null;
+  reps1: number | null;
+  reps2: number | null;
+  reps3: number | null;
   bestScore: number | null;
   averageScore: number | null;
 }
@@ -33,6 +36,9 @@ export interface TrialDataFormData {
   trial1: number | null;
   trial2: number | null;
   trial3: number | null;
+  reps1: number | null;
+  reps2: number | null;
+  reps3: number | null;
   bestScore: number | null;
   averageScore: number | null;
 }
@@ -42,6 +48,9 @@ export interface MetricWithTrials {
   trial1: number | null;
   trial2: number | null;
   trial3: number | null;
+  reps1: number | null;
+  reps2: number | null;
+  reps3: number | null;
   bestScore: number | null;
   averageScore: number | null;
   existingTrialDataId?: string;

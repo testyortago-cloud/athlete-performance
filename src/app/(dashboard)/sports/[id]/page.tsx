@@ -3,6 +3,8 @@ import { getSportById } from '@/lib/services/sportService';
 import { getCategoriesBySport, getMetricsBySport } from '@/lib/services/metricService';
 import { SportDetailClient } from './SportDetailClient';
 
+export const dynamic = 'force-dynamic';
+
 interface SportDetailPageProps {
   params: Promise<{ id: string }>;
 }

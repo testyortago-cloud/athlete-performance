@@ -23,14 +23,19 @@ export default async function LoadDetailPage({ params }: LoadPageProps) {
 
   const athlete = athletes.find((a) => a.id === load.athleteId);
 
-  // Compute ACWR for this athlete
+  // Fetch athlete data for context
   let acwr: number | null = null;
+  let athleteLoads: Awaited<ReturnType<typeof getDailyLoads>> = [];
+  let activeInjuries: Awaited<ReturnType<typeof getInjuries>> = [];
+
   if (athlete) {
     const [allLoads, injuries, thresholds] = await Promise.all([
       getDailyLoads({ athleteId: athlete.id }).catch(() => []),
       getInjuries({ athleteId: athlete.id }).catch(() => []),
       getThresholdSettings(),
     ]);
+    athleteLoads = allLoads;
+    activeInjuries = injuries.filter((i) => i.status !== 'resolved');
     const riskIndicators = computeAthleteRiskIndicators([athlete], allLoads, injuries, thresholds);
     acwr = riskIndicators[0]?.acwr ?? null;
   }
@@ -40,6 +45,11 @@ export default async function LoadDetailPage({ params }: LoadPageProps) {
       load={{ ...load, athleteName: athlete?.name || 'Unknown' }}
       athletes={athletes}
       acwr={acwr}
+      athleteLoads={athleteLoads.map((l) => ({
+        ...l,
+        athleteName: athlete?.name || 'Unknown',
+      }))}
+      activeInjuries={activeInjuries}
     />
   );
 }

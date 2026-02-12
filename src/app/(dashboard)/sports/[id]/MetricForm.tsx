@@ -22,6 +22,7 @@ export function MetricForm({ sportId, categoryId, metric, onSuccess }: MetricFor
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isDerived, setIsDerived] = useState(metric?.isDerived || false);
+  const [hasReps, setHasReps] = useState(metric?.hasReps || false);
   const isEdit = !!metric;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -33,6 +34,7 @@ export function MetricForm({ sportId, categoryId, metric, onSuccess }: MetricFor
     formData.set('sportId', sportId);
     formData.set('categoryId', categoryId);
     formData.set('isDerived', isDerived ? 'true' : 'false');
+    formData.set('hasReps', hasReps ? 'true' : 'false');
 
     try {
       const result = isEdit
@@ -98,6 +100,19 @@ export function MetricForm({ sportId, categoryId, metric, onSuccess }: MetricFor
           { label: 'Lowest', value: 'lowest' },
         ]}
       />
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="hasRepsCheckbox"
+          checked={hasReps}
+          onChange={(e) => setHasReps(e.target.checked)}
+          className="h-4 w-4 rounded border-border text-black focus:ring-black"
+        />
+        <label htmlFor="hasRepsCheckbox" className="text-sm font-medium text-gray-700">
+          Track reps (e.g. strength exercises)
+        </label>
+      </div>
 
       <div className="flex items-center gap-2">
         <input

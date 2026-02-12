@@ -16,13 +16,16 @@ import { cn } from '@/utils/cn';
 import { exportToCsv } from '@/lib/utils/csvExport';
 import { useToastStore } from '@/components/ui/Toast';
 import { bulkUpdateStatusAction, bulkAssignProgramAction } from './actions';
-import { Plus, LayoutGrid, List, X, Download, UserCog, FolderSync } from 'lucide-react';
-import type { Athlete, Sport, TrainingProgram } from '@/types';
+import { BodyMap } from '@/components/charts/BodyMap';
+import { Plus, LayoutGrid, List, X, Download, UserCog, FolderSync, Users, UserCheck, AlertTriangle, Activity } from 'lucide-react';
+import type { Athlete, Sport, TrainingProgram, Injury, RiskIndicator } from '@/types';
 
 interface AthletesClientProps {
   athletes: Athlete[];
   sports: Sport[];
   programs: TrainingProgram[];
+  injuries: Injury[];
+  riskIndicators: RiskIndicator[];
 }
 
 type ViewMode = 'table' | 'grid';
@@ -75,7 +78,7 @@ function AthleteCard({ athlete, onClick }: { athlete: Athlete; onClick: () => vo
   );
 }
 
-export function AthletesClient({ athletes, sports, programs }: AthletesClientProps) {
+export function AthletesClient({ athletes, sports, programs, injuries, riskIndicators }: AthletesClientProps) {
   const router = useRouter();
   const { addToast } = useToastStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -94,6 +97,24 @@ export function AthletesClient({ athletes, sports, programs }: AthletesClientPro
     active: athletes.filter((a) => a.status === 'active').length,
     inactive: athletes.filter((a) => a.status === 'inactive').length,
   }), [athletes]);
+
+  const injuredAthleteCount = useMemo(() => {
+    const ids = new Set(injuries.map((i) => i.athleteId));
+    return ids.size;
+  }, [injuries]);
+
+  const atRiskCount = useMemo(() => {
+    return riskIndicators.filter((r) => r.riskLevel === 'high').length;
+  }, [riskIndicators]);
+
+  const bodyMapData = useMemo(() => {
+    const regionCounts: Record<string, number> = {};
+    for (const injury of injuries) {
+      const region = injury.bodyRegion || 'Unknown';
+      regionCounts[region] = (regionCounts[region] || 0) + 1;
+    }
+    return Object.entries(regionCounts).map(([region, count]) => ({ region, count }));
+  }, [injuries]);
 
   const selectedCount = selectedIds.size;
 
@@ -170,6 +191,101 @@ export function AthletesClient({ athletes, sports, programs }: AthletesClientPro
           </div>
         }
       />
+
+      {/* Summary stats */}
+      {athletes.length > 0 && (
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Card padding="md">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+                <Users className="h-5 w-5 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-black">{athletes.length}</p>
+                <p className="text-xs text-gray-500">Total Athletes</p>
+              </div>
+            </div>
+          </Card>
+          <Card padding="md">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
+                <UserCheck className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-black">{counts.active}</p>
+                <p className="text-xs text-gray-500">Active</p>
+              </div>
+            </div>
+          </Card>
+          <Card padding="md">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-black">{injuredAthleteCount}</p>
+                <p className="text-xs text-gray-500">Currently Injured</p>
+              </div>
+            </div>
+          </Card>
+          <Card padding="md">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger/10">
+                <Activity className="h-5 w-5 text-danger" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-black">{atRiskCount}</p>
+                <p className="text-xs text-gray-500">High Risk (ACWR)</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Injury body map + risk overview */}
+      {athletes.length > 0 && (injuries.length > 0 || atRiskCount > 0) && (
+        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {injuries.length > 0 && (
+            <Card className="flex flex-col items-center justify-center">
+              <h3 className="mb-2 text-sm font-semibold text-black">Team Injury Map</h3>
+              <BodyMap data={bodyMapData} compact />
+              <p className="mt-2 text-xs text-gray-400">{injuries.length} active {injuries.length === 1 ? 'injury' : 'injuries'}</p>
+            </Card>
+          )}
+          <Card className={injuries.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}>
+            <h3 className="mb-3 text-sm font-semibold text-black">Risk Overview</h3>
+            {riskIndicators.filter((r) => r.riskLevel !== 'low').length === 0 ? (
+              <p className="text-sm text-gray-500 py-4 text-center">All athletes are in the safe ACWR range.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {riskIndicators
+                  .filter((r) => r.riskLevel !== 'low')
+                  .sort((a, b) => b.acwr - a.acwr)
+                  .map((r) => (
+                    <div key={r.athleteId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          'h-2 w-2 rounded-full',
+                          r.riskLevel === 'high' ? 'bg-danger' : 'bg-warning'
+                        )} />
+                        <span className="text-sm font-medium text-black">{r.athleteName}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-gray-500">ACWR: <span className="font-semibold text-black">{r.acwr}</span></span>
+                        {r.activeInjuries > 0 && (
+                          <Badge variant="warning">{r.activeInjuries} {r.activeInjuries === 1 ? 'injury' : 'injuries'}</Badge>
+                        )}
+                        <Badge variant={r.riskLevel === 'high' ? 'danger' : 'warning'}>
+                          {r.riskLevel}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
 
       {athletes.length === 0 ? (
         <EmptyState

@@ -18,8 +18,9 @@ function mapMetric(record: { id: string; fields: Record<string, unknown> }): Met
     name: (record.fields.Name as string) || '',
     unit: (record.fields.Unit as string) || '',
     isDerived: (record.fields.IsDerived as boolean) || false,
+    hasReps: (record.fields.HasReps as boolean) || false,
     formula: (record.fields.Formula as string) || null,
-    bestScoreMethod: ((record.fields.BestScoreMethod as string) || 'highest') as 'highest' | 'lowest',
+    bestScoreMethod: ((record.fields.BestScoreMethod as string) || 'Highest').toLowerCase() as 'highest' | 'lowest',
     trialCount: (record.fields.TrialCount as number) || 3,
     createdAt: (record.fields.Created as string) || new Date().toISOString(),
   };
@@ -27,10 +28,9 @@ function mapMetric(record: { id: string; fields: Record<string, unknown> }): Met
 
 export async function getCategoriesBySport(sportId: string): Promise<MetricCategory[]> {
   const records = await getRecords(TABLES.METRIC_CATEGORIES, {
-    filterByFormula: `FIND("${sportId}", ARRAYJOIN({Sport}))`,
     sort: [{ field: 'SortOrder', direction: 'asc' }],
   });
-  return records.map(mapCategory);
+  return records.map(mapCategory).filter((c) => c.sportId === sportId);
 }
 
 export async function getCategoryById(id: string): Promise<MetricCategory | null> {
@@ -64,18 +64,16 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export async function getMetricsByCategory(categoryId: string): Promise<Metric[]> {
   const records = await getRecords(TABLES.METRICS, {
-    filterByFormula: `FIND("${categoryId}", ARRAYJOIN({Category}))`,
     sort: [{ field: 'Name', direction: 'asc' }],
   });
-  return records.map(mapMetric);
+  return records.map(mapMetric).filter((m) => m.categoryId === categoryId);
 }
 
 export async function getMetricsBySport(sportId: string): Promise<Metric[]> {
   const records = await getRecords(TABLES.METRICS, {
-    filterByFormula: `FIND("${sportId}", ARRAYJOIN({Sport}))`,
     sort: [{ field: 'Name', direction: 'asc' }],
   });
-  return records.map(mapMetric);
+  return records.map(mapMetric).filter((m) => m.sportId === sportId);
 }
 
 export async function createMetric(data: MetricFormData): Promise<Metric> {
@@ -85,8 +83,9 @@ export async function createMetric(data: MetricFormData): Promise<Metric> {
     Name: data.name,
     Unit: data.unit,
     IsDerived: data.isDerived,
+    HasReps: data.hasReps,
     Formula: data.formula || '',
-    BestScoreMethod: data.bestScoreMethod,
+    BestScoreMethod: data.bestScoreMethod === 'highest' ? 'Highest' : 'Lowest',
     TrialCount: data.trialCount,
   });
   return mapMetric(record);
@@ -97,8 +96,9 @@ export async function updateMetric(id: string, data: Partial<MetricFormData>): P
   if (data.name !== undefined) fields.Name = data.name;
   if (data.unit !== undefined) fields.Unit = data.unit;
   if (data.isDerived !== undefined) fields.IsDerived = data.isDerived;
+  if (data.hasReps !== undefined) fields.HasReps = data.hasReps;
   if (data.formula !== undefined) fields.Formula = data.formula;
-  if (data.bestScoreMethod !== undefined) fields.BestScoreMethod = data.bestScoreMethod;
+  if (data.bestScoreMethod !== undefined) fields.BestScoreMethod = data.bestScoreMethod === 'highest' ? 'Highest' : 'Lowest';
   if (data.trialCount !== undefined) fields.TrialCount = data.trialCount;
   if (data.categoryId !== undefined) fields.Category = [data.categoryId];
   if (data.sportId !== undefined) fields.Sport = [data.sportId];

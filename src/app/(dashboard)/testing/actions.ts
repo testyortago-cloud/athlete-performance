@@ -79,6 +79,9 @@ interface TrialEntry {
   trial1: number | null;
   trial2: number | null;
   trial3: number | null;
+  reps1: number | null;
+  reps2: number | null;
+  reps3: number | null;
   bestScore: number | null;
   averageScore: number | null;
   existingId?: string;
@@ -103,6 +106,9 @@ export async function saveTrialDataAction(sessionId: string, trialsJson: string)
         trial1: trial.trial1,
         trial2: trial.trial2,
         trial3: trial.trial3,
+        reps1: trial.reps1,
+        reps2: trial.reps2,
+        reps3: trial.reps3,
         bestScore: trial.bestScore,
         averageScore: trial.averageScore,
       };

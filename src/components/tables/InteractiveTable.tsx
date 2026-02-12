@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { TableHeader } from './TableHeader';
 import { TableBody } from './TableBody';
 import { TablePagination } from './TablePagination';
@@ -27,6 +27,7 @@ interface InteractiveTableProps<T> {
     filters: Record<string, string>;
     search: string;
   }) => void;
+  onFilteredDataChange?: (data: T[]) => void;
 }
 
 export function InteractiveTable<T extends { id?: string }>({
@@ -42,6 +43,7 @@ export function InteractiveTable<T extends { id?: string }>({
   selectedIds,
   onSelectionChange,
   onStateChange,
+  onFilteredDataChange,
 }: InteractiveTableProps<T>) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -152,6 +154,10 @@ export function InteractiveTable<T extends { id?: string }>({
 
     return result;
   }, [data, search, filters, sortField, sortDirection, serverSide, columns]);
+
+  useEffect(() => {
+    onFilteredDataChange?.(processedData);
+  }, [processedData, onFilteredDataChange]);
 
   const totalItems = serverSide
     ? (externalTotalItems ?? data.length)

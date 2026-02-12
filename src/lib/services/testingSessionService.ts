@@ -21,6 +21,9 @@ function mapTrialData(record: { id: string; fields: Record<string, unknown> }): 
     trial1: (record.fields.Trial_1 as number) ?? null,
     trial2: (record.fields.Trial_2 as number) ?? null,
     trial3: (record.fields.Trial_3 as number) ?? null,
+    reps1: (record.fields.Reps_1 as number) ?? null,
+    reps2: (record.fields.Reps_2 as number) ?? null,
+    reps3: (record.fields.Reps_3 as number) ?? null,
     bestScore: (record.fields.BestScore as number) ?? null,
     averageScore: (record.fields.AverageScore as number) ?? null,
   };
@@ -29,22 +32,15 @@ function mapTrialData(record: { id: string; fields: Record<string, unknown> }): 
 export async function getTestingSessions(options?: {
   athleteId?: string;
 }): Promise<TestingSession[]> {
-  const filterParts: string[] = [];
-
-  if (options?.athleteId) {
-    filterParts.push(`FIND("${options.athleteId}", ARRAYJOIN({Athlete}))`);
-  }
-
-  const filterByFormula = filterParts.length > 1
-    ? `AND(${filterParts.join(', ')})`
-    : filterParts[0] || '';
-
   const records = await getRecords(TABLES.TESTING_SESSIONS, {
-    filterByFormula: filterByFormula || undefined,
     sort: [{ field: 'Date', direction: 'desc' }],
   });
 
-  return records.map(mapSession);
+  let results = records.map(mapSession);
+  if (options?.athleteId) {
+    results = results.filter((s) => s.athleteId === options.athleteId);
+  }
+  return results;
 }
 
 export async function getTestingSessionById(id: string): Promise<TestingSession | null> {
@@ -78,10 +74,8 @@ export async function deleteTestingSession(id: string): Promise<void> {
 }
 
 export async function getTrialDataBySession(sessionId: string): Promise<TrialData[]> {
-  const records = await getRecords(TABLES.TRIAL_DATA, {
-    filterByFormula: `FIND("${sessionId}", ARRAYJOIN({Session}))`,
-  });
-  return records.map(mapTrialData);
+  const records = await getRecords(TABLES.TRIAL_DATA);
+  return records.map(mapTrialData).filter((t) => t.sessionId === sessionId);
 }
 
 export async function createTrialData(data: TrialDataFormData): Promise<TrialData> {
@@ -91,6 +85,9 @@ export async function createTrialData(data: TrialDataFormData): Promise<TrialDat
     Trial_1: data.trial1,
     Trial_2: data.trial2,
     Trial_3: data.trial3,
+    Reps_1: data.reps1,
+    Reps_2: data.reps2,
+    Reps_3: data.reps3,
     BestScore: data.bestScore,
     AverageScore: data.averageScore,
   });
@@ -102,6 +99,9 @@ export async function updateTrialData(id: string, data: Partial<TrialDataFormDat
   if (data.trial1 !== undefined) fields.Trial_1 = data.trial1;
   if (data.trial2 !== undefined) fields.Trial_2 = data.trial2;
   if (data.trial3 !== undefined) fields.Trial_3 = data.trial3;
+  if (data.reps1 !== undefined) fields.Reps_1 = data.reps1;
+  if (data.reps2 !== undefined) fields.Reps_2 = data.reps2;
+  if (data.reps3 !== undefined) fields.Reps_3 = data.reps3;
   if (data.bestScore !== undefined) fields.BestScore = data.bestScore;
   if (data.averageScore !== undefined) fields.AverageScore = data.averageScore;
 

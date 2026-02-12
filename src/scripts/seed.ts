@@ -114,7 +114,7 @@ interface MetricDef {
   sport: string;
   category: string;
   sortOrder: number;
-  metrics: { name: string; unit: string; best: 'highest' | 'lowest'; range: [number, number] }[];
+  metrics: { name: string; unit: string; best: 'highest' | 'lowest'; range: [number, number]; hasReps?: boolean }[];
 }
 
 const METRICS: MetricDef[] = [
@@ -136,8 +136,8 @@ const METRICS: MetricDef[] = [
   {
     sport: 'Rugby League', category: 'Strength', sortOrder: 3,
     metrics: [
-      { name: 'Bench Press 1RM', unit: 'kg', best: 'highest', range: [80, 140] },
-      { name: 'Back Squat 1RM', unit: 'kg', best: 'highest', range: [120, 200] },
+      { name: 'Bench Press 1RM', unit: 'kg', best: 'highest', range: [80, 140], hasReps: true },
+      { name: 'Back Squat 1RM', unit: 'kg', best: 'highest', range: [120, 200], hasReps: true },
     ],
   },
   {
@@ -308,7 +308,7 @@ async function seed() {
 
   // 5. Metric Categories + Metrics
   console.log('Creating metrics...');
-  interface MetricRef { id: string; sport: string; best: 'highest' | 'lowest'; range: [number, number] }
+  interface MetricRef { id: string; sport: string; best: 'highest' | 'lowest'; range: [number, number]; hasReps?: boolean }
   const metricRefs: MetricRef[] = [];
   let catCount = 0;
   let metricCount = 0;
@@ -328,10 +328,11 @@ async function seed() {
         Name: m.name,
         Unit: m.unit,
         IsDerived: false,
+        HasReps: m.hasReps || false,
         BestScoreMethod: m.best === 'highest' ? 'Highest' : 'Lowest',
         TrialCount: 3,
       });
-      metricRefs.push({ id: metricId, sport: md.sport, best: m.best, range: m.range });
+      metricRefs.push({ id: metricId, sport: md.sport, best: m.best, range: m.range, hasReps: m.hasReps });
       metricCount++;
     }
   }
@@ -360,7 +361,7 @@ async function seed() {
         const t2 = randomBetween(metric.range[0], metric.range[1]);
         const t3 = randomBetween(metric.range[0], metric.range[1]);
 
-        await createRecord('Trial_Data', {
+        const trialFields: Record<string, unknown> = {
           Session: [sessionId],
           Metric: [metric.id],
           Trial_1: t1,
@@ -368,7 +369,15 @@ async function seed() {
           Trial_3: t3,
           BestScore: computeBest([t1, t2, t3], metric.best),
           AverageScore: computeAvg([t1, t2, t3]),
-        });
+        };
+
+        if (metric.hasReps) {
+          trialFields.Reps_1 = randomInt(1, 10);
+          trialFields.Reps_2 = randomInt(1, 10);
+          trialFields.Reps_3 = randomInt(1, 10);
+        }
+
+        await createRecord('Trial_Data', trialFields);
         trialCount++;
       }
     }

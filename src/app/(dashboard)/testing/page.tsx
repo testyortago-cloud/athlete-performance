@@ -13,5 +13,5 @@ export default async function TestingPage() {
     athleteName: athleteMap.get(s.athleteId) || 'Unknown',
   }));
 
-  return <TestingClient sessions={enrichedSessions} />;
+  return <TestingClient sessions={enrichedSessions} totalAthletes={athletes.length} />;
 }

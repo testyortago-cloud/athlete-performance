@@ -85,6 +85,7 @@ export function MetricCategorySection({ category, metrics, sportId }: MetricCate
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-black">{metric.name}</span>
+                    {metric.hasReps && <Badge variant="outline">Reps</Badge>}
                     {metric.isDerived && <Badge variant="outline">Derived</Badge>}
                   </div>
                   <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500">

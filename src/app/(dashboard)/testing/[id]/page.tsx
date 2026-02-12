@@ -3,6 +3,7 @@ import { getTestingSessionById, getTrialDataBySession, getTestingSessions } from
 import { getAthleteById } from '@/lib/services/athleteService';
 import { getAthletes } from '@/lib/services/athleteService';
 import { getCategoriesBySport, getMetricsBySport } from '@/lib/services/metricService';
+import { getInjuries } from '@/lib/services/injuryService';
 import { SessionDetailClient } from './SessionDetailClient';
 import type { CategoryWithMetrics } from '@/types';
 
@@ -76,6 +77,9 @@ export default async function SessionDetailPage({ params }: SessionPageProps) {
             trial1: existing?.trial1 ?? null,
             trial2: existing?.trial2 ?? null,
             trial3: existing?.trial3 ?? null,
+            reps1: existing?.reps1 ?? null,
+            reps2: existing?.reps2 ?? null,
+            reps3: existing?.reps3 ?? null,
             bestScore: existing?.bestScore ?? null,
             averageScore: existing?.averageScore ?? null,
             existingTrialDataId: existing?.id,
@@ -104,6 +108,15 @@ export default async function SessionDetailPage({ params }: SessionPageProps) {
     previousSessionComparison = { date: prevSession.date, scores };
   }
 
+  // Fetch active injuries for context
+  const athleteInjuries = await getInjuries({ athleteId: athlete.id });
+  const activeInjuries = athleteInjuries.filter((i) => i.status !== 'resolved');
+
+  // Session index (chronological position)
+  const sessionIndex = allSessions
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .findIndex((s) => s.id === id) + 1;
+
   return (
     <SessionDetailClient
       session={{ ...session, athleteName: athlete.name }}
@@ -112,6 +125,9 @@ export default async function SessionDetailPage({ params }: SessionPageProps) {
       categoriesWithMetrics={categoriesWithMetrics}
       personalBests={personalBests}
       previousSession={previousSessionComparison}
+      activeInjuries={activeInjuries}
+      sessionIndex={sessionIndex}
+      totalSessions={allSessions.length}
     />
   );
 }

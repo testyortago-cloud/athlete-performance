@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -14,8 +14,9 @@ import { saveTrialDataAction, updateSessionAction, deleteSessionAction } from '.
 import { useToastStore } from '@/stores/toastStore';
 import { cn } from '@/utils/cn';
 import { Stopwatch } from '@/components/Stopwatch';
-import { Save, Pencil, Trash2, ChevronDown, ChevronUp, Star, ArrowUpRight, ArrowDownRight, Minus, GitCompareArrows } from 'lucide-react';
-import type { TestingSession, Athlete, CategoryWithMetrics } from '@/types';
+import { BodyMap } from '@/components/charts/BodyMap';
+import { Save, Pencil, Trash2, ChevronDown, ChevronUp, Star, ArrowUpRight, ArrowDownRight, Minus, GitCompareArrows, Target, Trophy, TrendingUp, AlertTriangle, ClipboardCheck, Hash } from 'lucide-react';
+import type { TestingSession, Athlete, CategoryWithMetrics, Injury } from '@/types';
 
 interface PreviousSessionData {
   date: string;
@@ -29,12 +30,18 @@ interface SessionDetailClientProps {
   categoriesWithMetrics: CategoryWithMetrics[];
   personalBests?: Record<string, number>;
   previousSession?: PreviousSessionData;
+  activeInjuries?: Injury[];
+  sessionIndex?: number;
+  totalSessions?: number;
 }
 
 interface TrialState {
   trial1: number | null;
   trial2: number | null;
   trial3: number | null;
+  reps1: number | null;
+  reps2: number | null;
+  reps3: number | null;
   bestScore: number | null;
   averageScore: number | null;
   existingId?: string;
@@ -98,6 +105,9 @@ export function SessionDetailClient({
   categoriesWithMetrics,
   personalBests = {},
   previousSession,
+  activeInjuries = [],
+  sessionIndex = 0,
+  totalSessions = 0,
 }: SessionDetailClientProps) {
   const router = useRouter();
   const { addToast } = useToastStore();
@@ -120,6 +130,9 @@ export function SessionDetailClient({
             trial1: mwt.trial1,
             trial2: mwt.trial2,
             trial3: mwt.trial3,
+            reps1: mwt.reps1,
+            reps2: mwt.reps2,
+            reps3: mwt.reps3,
             bestScore: mwt.bestScore,
             averageScore: mwt.averageScore,
             existingId: mwt.existingTrialDataId,
@@ -133,12 +146,22 @@ export function SessionDetailClient({
   const updateTrial = useCallback(
     (metricId: string, field: 'trial1' | 'trial2' | 'trial3', value: number | null, bestScoreMethod: 'highest' | 'lowest') => {
       setTrialState((prev) => {
-        const current = prev[metricId] || { trial1: null, trial2: null, trial3: null, bestScore: null, averageScore: null };
+        const current = prev[metricId] || { trial1: null, trial2: null, trial3: null, reps1: null, reps2: null, reps3: null, bestScore: null, averageScore: null };
         const updated = { ...current, [field]: value };
         const trials = [updated.trial1, updated.trial2, updated.trial3];
         updated.bestScore = computeBestScore(trials, bestScoreMethod);
         updated.averageScore = computeAverage(trials);
         return { ...prev, [metricId]: updated };
+      });
+    },
+    [],
+  );
+
+  const updateReps = useCallback(
+    (metricId: string, field: 'reps1' | 'reps2' | 'reps3', value: number | null) => {
+      setTrialState((prev) => {
+        const current = prev[metricId] || { trial1: null, trial2: null, trial3: null, reps1: null, reps2: null, reps3: null, bestScore: null, averageScore: null };
+        return { ...prev, [metricId]: { ...current, [field]: value } };
       });
     },
     [],
@@ -152,6 +175,47 @@ export function SessionDetailClient({
     return bestScore < prevBest;
   }
 
+  // Computed session metrics
+  const sessionMetrics = useMemo(() => {
+    const allMetrics = categoriesWithMetrics.flatMap((c) => c.metrics).filter((m) => !m.metric.isDerived);
+    const totalMetrics = allMetrics.length;
+    let recorded = 0;
+    let pbCount = 0;
+    let improved = 0;
+    let declined = 0;
+
+    for (const mwt of allMetrics) {
+      const state = trialState[mwt.metric.id];
+      const best = state?.bestScore ?? null;
+      if (best != null) {
+        recorded++;
+        if (isNewPersonalBest(mwt.metric.id, best, mwt.metric.bestScoreMethod)) {
+          pbCount++;
+        }
+        if (previousSession) {
+          const prev = previousSession.scores[mwt.metric.id];
+          if (prev != null) {
+            const isHigherBetter = mwt.metric.bestScoreMethod === 'highest';
+            if (isHigherBetter ? best > prev : best < prev) improved++;
+            if (isHigherBetter ? best < prev : best > prev) declined++;
+          }
+        }
+      }
+    }
+
+    return { totalMetrics, recorded, pbCount, improved, declined };
+  }, [categoriesWithMetrics, trialState, personalBests, previousSession]);
+
+  // Injury body map data
+  const injuryBodyMapData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const injury of activeInjuries) {
+      const region = injury.bodyRegion || 'Unknown';
+      counts[region] = (counts[region] || 0) + 1;
+    }
+    return Object.entries(counts).map(([region, count]) => ({ region, count }));
+  }, [activeInjuries]);
+
   async function handleSaveAll() {
     setSaving(true);
 
@@ -160,6 +224,9 @@ export function SessionDetailClient({
       trial1: state.trial1,
       trial2: state.trial2,
       trial3: state.trial3,
+      reps1: state.reps1,
+      reps2: state.reps2,
+      reps3: state.reps3,
       bestScore: state.bestScore,
       averageScore: state.averageScore,
       existingId: state.existingId,
@@ -257,6 +324,132 @@ export function SessionDetailClient({
           </div>
         }
       />
+
+      {/* Quick stat cards */}
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card padding="none" className="px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+              <Hash className="h-4 w-4 text-gray-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-black">{sessionIndex}</p>
+              <p className="text-[11px] text-gray-500">Session (of {totalSessions})</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="none" className="px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10">
+              <ClipboardCheck className="h-4 w-4 text-success" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-black">
+                {sessionMetrics.recorded}
+                <span className="text-sm font-normal text-gray-400">/{sessionMetrics.totalMetrics}</span>
+              </p>
+              <p className="text-[11px] text-gray-500">Metrics Recorded</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="none" className="px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning/10">
+              <Trophy className="h-4 w-4 text-warning" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-black">{sessionMetrics.pbCount}</p>
+              <p className="text-[11px] text-gray-500">New Personal Bests</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="none" className="px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-lg',
+              sessionMetrics.improved > 0 ? 'bg-success/10' : 'bg-gray-100',
+            )}>
+              <TrendingUp className={cn(
+                'h-4 w-4',
+                sessionMetrics.improved > 0 ? 'text-success' : 'text-gray-400',
+              )} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-black">
+                {sessionMetrics.improved}
+                {sessionMetrics.declined > 0 && (
+                  <span className="text-sm font-normal text-danger"> / {sessionMetrics.declined}</span>
+                )}
+              </p>
+              <p className="text-[11px] text-gray-500">
+                Improved{sessionMetrics.declined > 0 ? ' / Declined' : ' vs Previous'}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Active injuries alert */}
+      {activeInjuries.length > 0 && (
+        <Card className="mb-6 border-warning/30 bg-warning/[0.03]" padding="none">
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
+            <div className="flex-1">
+              <div className="mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <h3 className="text-sm font-semibold text-black">
+                  Active Injuries ({activeInjuries.length})
+                </h3>
+              </div>
+              <p className="mb-3 text-xs text-gray-500">
+                {session.athleteName} has {activeInjuries.length} active {activeInjuries.length === 1 ? 'injury' : 'injuries'}. Consider modifications during testing.
+              </p>
+              <div className="space-y-2">
+                {activeInjuries.map((injury) => (
+                  <div key={injury.id} className="flex items-center gap-2 text-sm">
+                    <Badge variant={injury.status === 'active' ? 'danger' : injury.status === 'rehab' ? 'warning' : 'default'}>
+                      {injury.status.charAt(0).toUpperCase() + injury.status.slice(1)}
+                    </Badge>
+                    <span className="font-medium text-black">{injury.bodyRegion}</span>
+                    <span className="text-gray-400">—</span>
+                    <span className="text-gray-500">{injury.description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <BodyMap data={injuryBodyMapData} compact />
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Completion progress bar */}
+      {sessionMetrics.totalMetrics > 0 && (
+        <div className="mb-6">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="text-gray-500">Session Completion</span>
+            <span className="font-medium text-black">
+              {Math.round((sessionMetrics.recorded / sessionMetrics.totalMetrics) * 100)}%
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-gray-100">
+            <div
+              className={cn(
+                'h-2 rounded-full transition-all',
+                sessionMetrics.recorded === sessionMetrics.totalMetrics
+                  ? 'bg-success'
+                  : sessionMetrics.recorded > 0
+                    ? 'bg-black'
+                    : 'bg-gray-200',
+              )}
+              style={{ width: `${(sessionMetrics.recorded / sessionMetrics.totalMetrics) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Session info collapsible */}
       <Card className="mb-6">
@@ -362,19 +555,36 @@ export function SessionDetailClient({
                           {[1, 2, 3].map((trialNum) => {
                             const show = trialNum <= metric.trialCount;
                             const field = `trial${trialNum}` as 'trial1' | 'trial2' | 'trial3';
+                            const repsField = `reps${trialNum}` as 'reps1' | 'reps2' | 'reps3';
                             return (
                               <td key={trialNum} className="px-3 py-2 text-center">
                                 {show ? (
-                                  <input
-                                    type="number"
-                                    step="any"
-                                    className="w-20 rounded border border-gray-300 px-2 py-1 text-center text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                                    value={state?.[field] ?? ''}
-                                    onChange={(e) => {
-                                      const val = e.target.value === '' ? null : Number(e.target.value);
-                                      updateTrial(metric.id, field, val, metric.bestScoreMethod);
-                                    }}
-                                  />
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      className="w-20 rounded border border-gray-300 px-2 py-1 text-center text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                                      value={state?.[field] ?? ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value === '' ? null : Number(e.target.value);
+                                        updateTrial(metric.id, field, val, metric.bestScoreMethod);
+                                      }}
+                                    />
+                                    {metric.hasReps && (
+                                      <input
+                                        type="number"
+                                        step="1"
+                                        min="0"
+                                        placeholder="reps"
+                                        className="w-16 rounded border border-gray-200 px-1.5 py-0.5 text-center text-xs text-gray-500 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                                        value={state?.[repsField] ?? ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                                          updateReps(metric.id, repsField, val);
+                                        }}
+                                      />
+                                    )}
+                                  </div>
                                 ) : (
                                   <span className="text-gray-300">—</span>
                                 )}
@@ -389,9 +599,20 @@ export function SessionDetailClient({
                           </td>
                           <td className="px-3 py-3 text-center">
                             {state?.bestScore != null ? (
-                              <div className="flex items-center justify-center gap-1">
-                                <Badge variant={isPb ? 'warning' : 'success'}>{state.bestScore}</Badge>
-                                <PersonalBestIndicator isNewPb={isPb} />
+                              <div className="flex flex-col items-center gap-0.5">
+                                <div className="flex items-center justify-center gap-1">
+                                  <Badge variant={isPb ? 'warning' : 'success'}>{state.bestScore}</Badge>
+                                  <PersonalBestIndicator isNewPb={isPb} />
+                                </div>
+                                {metric.hasReps && (() => {
+                                  const trials = [state.trial1, state.trial2, state.trial3];
+                                  const repsArr = [state.reps1, state.reps2, state.reps3];
+                                  const bestIdx = trials.indexOf(state.bestScore);
+                                  const bestReps = bestIdx >= 0 ? repsArr[bestIdx] : null;
+                                  return bestReps != null ? (
+                                    <span className="text-[10px] text-gray-400">x {bestReps} reps</span>
+                                  ) : null;
+                                })()}
                               </div>
                             ) : (
                               <span className="text-gray-300">—</span>

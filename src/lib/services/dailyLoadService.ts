@@ -18,22 +18,15 @@ function mapRecord(record: { id: string; fields: Record<string, unknown> }): Dai
 export async function getDailyLoads(options?: {
   athleteId?: string;
 }): Promise<DailyLoad[]> {
-  const filterParts: string[] = [];
-
-  if (options?.athleteId) {
-    filterParts.push(`FIND("${options.athleteId}", ARRAYJOIN({Athlete}))`);
-  }
-
-  const filterByFormula = filterParts.length > 1
-    ? `AND(${filterParts.join(', ')})`
-    : filterParts[0] || '';
-
   const records = await getRecords(TABLES.DAILY_LOAD, {
-    filterByFormula: filterByFormula || undefined,
     sort: [{ field: 'Date', direction: 'desc' }],
   });
 
-  return records.map(mapRecord);
+  let results = records.map(mapRecord);
+  if (options?.athleteId) {
+    results = results.filter((d) => d.athleteId === options.athleteId);
+  }
+  return results;
 }
 
 export async function getDailyLoadById(id: string): Promise<DailyLoad | null> {

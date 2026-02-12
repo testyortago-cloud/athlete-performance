@@ -29,9 +29,6 @@ export async function getAthletes(options?: {
   if (options?.search) {
     filterParts.push(`FIND(LOWER("${options.search}"), LOWER({Name}))`);
   }
-  if (options?.sportId) {
-    filterParts.push(`FIND("${options.sportId}", ARRAYJOIN({Sport}))`);
-  }
   if (options?.status) {
     const s = options.status.charAt(0).toUpperCase() + options.status.slice(1);
     filterParts.push(`{Status} = "${s}"`);
@@ -46,7 +43,11 @@ export async function getAthletes(options?: {
     sort: [{ field: 'Name', direction: 'asc' }],
   });
 
-  return records.map(mapRecord);
+  let results = records.map(mapRecord);
+  if (options?.sportId) {
+    results = results.filter((a) => a.sportId === options.sportId);
+  }
+  return results;
 }
 
 export async function getAthleteById(id: string): Promise<Athlete | null> {

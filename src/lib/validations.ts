@@ -38,6 +38,7 @@ export const metricSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   unit: z.string().min(1, 'Unit is required').max(20),
   isDerived: z.boolean().default(false),
+  hasReps: z.boolean().default(false),
   formula: z.string().optional(),
   bestScoreMethod: z.enum(['highest', 'lowest']),
   trialCount: z.number().int().min(1).max(10).default(3),
@@ -55,6 +56,9 @@ export const trialDataSchema = z.object({
   trial1: z.number().nullable().default(null),
   trial2: z.number().nullable().default(null),
   trial3: z.number().nullable().default(null),
+  reps1: z.number().int().nullable().default(null),
+  reps2: z.number().int().nullable().default(null),
+  reps3: z.number().int().nullable().default(null),
   bestScore: z.number().nullable().default(null),
   averageScore: z.number().nullable().default(null),
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -54,7 +54,9 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [view, setView] = useState<'table' | 'kanban'>('table');
+  const [tableFilteredData, setTableFilteredData] = useState<Injury[] | null>(null);
 
+  // Full heatmap always shows all injuries so users can click to filter
   const bodyMapData = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const injury of injuries) {
@@ -64,6 +66,7 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
     return Object.entries(counts).map(([region, count]) => ({ region, count }));
   }, [injuries]);
 
+  // Body-map region filter
   const filteredInjuries = useMemo(() => {
     if (!selectedRegion) return injuries;
     const terms = REGION_FILTER_MAP[selectedRegion] || [selectedRegion];
@@ -72,6 +75,28 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
       return terms.some((t) => lower.includes(t));
     });
   }, [injuries, selectedRegion]);
+
+  // The effective displayed data: table filters (search + column) on top of body-map filter
+  // In kanban view there are no table filters, so fall back to filteredInjuries
+  const displayedInjuries = view === 'table' && tableFilteredData !== null
+    ? tableFilteredData
+    : filteredInjuries;
+
+  const isFiltered = displayedInjuries.length < injuries.length;
+
+  // Summary region data derived from effective displayed injuries
+  const summaryRegionData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const injury of displayedInjuries) {
+      const region = injury.bodyRegion || 'Unknown';
+      counts[region] = (counts[region] || 0) + 1;
+    }
+    return Object.entries(counts).map(([region, count]) => ({ region, count }));
+  }, [displayedInjuries]);
+
+  const handleTableFilterChange = useCallback((data: Injury[]) => {
+    setTableFilteredData(data);
+  }, []);
 
   function handleRegionClick(region: string) {
     setSelectedRegion((prev) => (prev === region ? null : region));
@@ -109,7 +134,7 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
                 icon={<Download className="h-4 w-4" />}
                 onClick={() => {
                   const headers = ['Athlete', 'Type', 'Body Region', 'Description', 'Date Occurred', 'Date Resolved', 'Status', 'Days Lost'];
-                  const rows = filteredInjuries.map((i) => [
+                  const rows = displayedInjuries.map((i) => [
                     i.athleteName ?? '', i.type, i.bodyRegion, i.description,
                     i.dateOccurred, i.dateResolved ?? '', i.status, i.daysLost ?? '',
                   ]);
@@ -158,23 +183,30 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
             </Card>
 
             <Card className="lg:col-span-2">
-              <h3 className="mb-3 text-sm font-semibold text-black">Injury Summary</h3>
+              <h3 className="mb-3 text-sm font-semibold text-black">
+                Injury Summary
+                {isFiltered && (
+                  <span className="ml-2 text-xs font-normal text-gray-400">
+                    ({displayedInjuries.length} of {injuries.length})
+                  </span>
+                )}
+              </h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-black">
-                    {injuries.filter((i) => i.status !== 'resolved').length}
+                    {displayedInjuries.filter((i) => i.status !== 'resolved').length}
                   </p>
                   <p className="mt-1 text-xs text-gray-500">Active Injuries</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-black">
-                    {injuries.filter((i) => i.status === 'resolved').length}
+                    {displayedInjuries.filter((i) => i.status === 'resolved').length}
                   </p>
                   <p className="mt-1 text-xs text-gray-500">Resolved</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-black">
-                    {injuries.reduce((s, i) => s + (i.daysLost ?? 0), 0)}
+                    {displayedInjuries.reduce((s, i) => s + (i.daysLost ?? 0), 0)}
                   </p>
                   <p className="mt-1 text-xs text-gray-500">Total Days Lost</p>
                 </div>
@@ -183,11 +215,11 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
               <div className="mt-4 border-t border-border pt-4">
                 <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Top Affected Regions</h4>
                 <div className="space-y-2">
-                  {bodyMapData
+                  {summaryRegionData
                     .sort((a, b) => b.count - a.count)
                     .slice(0, 5)
                     .map((d) => {
-                      const maxCount = Math.max(...bodyMapData.map((b) => b.count));
+                      const maxCount = Math.max(...summaryRegionData.map((b) => b.count));
                       return (
                         <div key={d.region} className="flex items-center gap-3">
                           <div className="flex-1">
@@ -210,9 +242,9 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
             </Card>
           </div>
 
-          {selectedRegion && (
+          {isFiltered && (
             <p className="mb-2 text-sm text-gray-500">
-              Showing {filteredInjuries.length} of {injuries.length} injuries
+              Showing {displayedInjuries.length} of {injuries.length} injuries
             </p>
           )}
 
@@ -224,6 +256,7 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
               data={filteredInjuries}
               onRowClick={(injury) => router.push(`/injuries/${injury.id}`)}
               searchPlaceholder="Search injuries..."
+              onFilteredDataChange={handleTableFilterChange}
             />
           )}
         </>

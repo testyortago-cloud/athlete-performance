@@ -25,9 +25,6 @@ export async function getInjuries(options?: {
 }): Promise<Injury[]> {
   const filterParts: string[] = [];
 
-  if (options?.athleteId) {
-    filterParts.push(`FIND("${options.athleteId}", ARRAYJOIN({Athlete}))`);
-  }
   if (options?.status) {
     const s = options.status.charAt(0).toUpperCase() + options.status.slice(1);
     filterParts.push(`{Status} = "${s}"`);
@@ -45,7 +42,11 @@ export async function getInjuries(options?: {
     sort: [{ field: 'DateOccurred', direction: 'desc' }],
   });
 
-  return records.map(mapRecord);
+  let results = records.map(mapRecord);
+  if (options?.athleteId) {
+    results = results.filter((i) => i.athleteId === options.athleteId);
+  }
+  return results;
 }
 
 export async function getInjuryById(id: string): Promise<Injury | null> {
