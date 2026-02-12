@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { PhotoUpload } from '@/components/ui/PhotoUpload';
+import { useToastStore } from '@/stores/toastStore';
 import type { Athlete, Sport, TrainingProgram } from '@/types';
 import { createAthleteAction, updateAthleteAction } from './actions';
 
@@ -17,6 +19,7 @@ interface AthleteFormProps {
 
 export function AthleteForm({ athlete, sports, programs, onSuccess }: AthleteFormProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -51,6 +54,7 @@ export function AthleteForm({ athlete, sports, programs, onSuccess }: AthleteFor
       if (result.error) {
         setError(result.error);
       } else {
+        addToast(isEdit ? 'Athlete updated successfully' : 'Athlete created successfully', 'success');
         onSuccess?.();
         router.refresh();
       }
@@ -68,6 +72,8 @@ export function AthleteForm({ athlete, sports, programs, onSuccess }: AthleteFor
           {error}
         </div>
       )}
+
+      <PhotoUpload currentPhotoUrl={athlete?.photo?.url} />
 
       <Input
         id="name"

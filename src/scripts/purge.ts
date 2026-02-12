@@ -40,6 +40,7 @@ const TABLES = [
   'Metrics',
   'Metric_Categories',
   'Athletes',
+  'Training_Programs',
   'Sports',
   'Settings',
   'Users',

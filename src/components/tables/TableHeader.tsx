@@ -12,6 +12,10 @@ interface TableHeaderProps<T> {
   onSort: (field: string) => void;
   filters: Record<string, string>;
   onFilter: (field: string, value: string) => void;
+  showCheckbox?: boolean;
+  allSelected?: boolean;
+  someSelected?: boolean;
+  onToggleAll?: () => void;
 }
 
 export function TableHeader<T>({
@@ -21,10 +25,25 @@ export function TableHeader<T>({
   onSort,
   filters,
   onFilter,
+  showCheckbox,
+  allSelected,
+  someSelected,
+  onToggleAll,
 }: TableHeaderProps<T>) {
   return (
     <thead>
       <tr className="border-b border-border bg-muted/60">
+        {showCheckbox && (
+          <th className="w-10 px-3 py-3">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              ref={(el) => { if (el) el.indeterminate = !allSelected && !!someSelected; }}
+              onChange={onToggleAll}
+              className="rounded border-gray-300"
+            />
+          </th>
+        )}
         {columns.map((col) => {
           const key = String(col.key);
           const isCurrentSort = sortField === key;

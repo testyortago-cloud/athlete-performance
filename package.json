@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx --env-file=.env.local src/scripts/seed.ts",
+    "seed:users": "tsx --env-file=.env.local src/scripts/seed-users.ts",
     "purge": "tsx --env-file=.env.local src/scripts/purge.ts"
   },
   "dependencies": {

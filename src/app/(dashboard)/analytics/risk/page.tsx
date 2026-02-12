@@ -40,6 +40,8 @@ export default async function RiskPage() {
         highRiskCount={highRiskCount}
         moderateRiskCount={moderateRiskCount}
         avgAcwr={avgAcwr}
+        acwrModerate={thresholds.acwrModerate}
+        acwrHigh={thresholds.acwrHigh}
       />
     </Suspense>
   );

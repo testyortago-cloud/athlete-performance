@@ -16,6 +16,9 @@ interface InteractiveTableProps<T> {
   enableSearch?: boolean;
   searchPlaceholder?: string;
   serverSide?: boolean;
+  enableSelection?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
   onStateChange?: (state: {
     page: number;
     pageSize: number;
@@ -35,6 +38,9 @@ export function InteractiveTable<T extends { id?: string }>({
   enableSearch = true,
   searchPlaceholder = 'Search...',
   serverSide = false,
+  enableSelection = false,
+  selectedIds,
+  onSelectionChange,
   onStateChange,
 }: InteractiveTableProps<T>) {
   const [page, setPage] = useState(1);
@@ -159,6 +165,33 @@ export function InteractiveTable<T extends { id?: string }>({
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalItems);
 
+  // Selection helpers
+  const pageIds = paginatedData.map((r) => r.id).filter(Boolean) as string[];
+  const allPageSelected = enableSelection && pageIds.length > 0 && pageIds.every((id) => selectedIds?.has(id));
+  const somePageSelected = enableSelection && pageIds.some((id) => selectedIds?.has(id));
+
+  function handleToggleAll() {
+    if (!onSelectionChange || !selectedIds) return;
+    const next = new Set(selectedIds);
+    if (allPageSelected) {
+      pageIds.forEach((id) => next.delete(id));
+    } else {
+      pageIds.forEach((id) => next.add(id));
+    }
+    onSelectionChange(next);
+  }
+
+  function handleToggleRow(id: string) {
+    if (!onSelectionChange || !selectedIds) return;
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    onSelectionChange(next);
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-white shadow-sm">
       {enableSearch && (
@@ -185,12 +218,19 @@ export function InteractiveTable<T extends { id?: string }>({
             onSort={handleSort}
             filters={filters}
             onFilter={handleFilter}
+            showCheckbox={enableSelection}
+            allSelected={allPageSelected}
+            someSelected={somePageSelected}
+            onToggleAll={handleToggleAll}
           />
           <TableBody
             columns={columns}
             data={paginatedData}
             onRowClick={onRowClick}
             isLoading={isLoading}
+            showCheckbox={enableSelection}
+            selectedIds={selectedIds}
+            onToggleRow={handleToggleRow}
           />
         </table>
       </div>

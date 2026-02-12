@@ -6,6 +6,8 @@ function mapRecord(record: { id: string; fields: Record<string, unknown> }): Tra
     id: record.id,
     name: (record.fields.Name as string) || '',
     description: (record.fields.Description as string) || '',
+    startDate: (record.fields.StartDate as string) || null,
+    durationWeeks: (record.fields.DurationWeeks as number) ?? null,
     createdAt: (record.fields.Created as string) || new Date().toISOString(),
   };
 }
@@ -24,10 +26,14 @@ export async function getProgramById(id: string): Promise<TrainingProgram | null
 }
 
 export async function createProgram(data: TrainingProgramFormData): Promise<TrainingProgram> {
-  const record = await createRecord(TABLES.TRAINING_PROGRAMS, {
+  const fields: Record<string, unknown> = {
     Name: data.name,
     Description: data.description || '',
-  });
+  };
+  if (data.startDate) fields.StartDate = data.startDate;
+  if (data.durationWeeks) fields.DurationWeeks = data.durationWeeks;
+
+  const record = await createRecord(TABLES.TRAINING_PROGRAMS, fields);
   return mapRecord(record);
 }
 
@@ -35,6 +41,8 @@ export async function updateProgram(id: string, data: Partial<TrainingProgramFor
   const fields: Record<string, unknown> = {};
   if (data.name !== undefined) fields.Name = data.name;
   if (data.description !== undefined) fields.Description = data.description;
+  if (data.startDate !== undefined) fields.StartDate = data.startDate;
+  if (data.durationWeeks !== undefined) fields.DurationWeeks = data.durationWeeks;
 
   const record = await updateRecord(TABLES.TRAINING_PROGRAMS, id, fields);
   return mapRecord(record);

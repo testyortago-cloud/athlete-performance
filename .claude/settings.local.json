@@ -23,7 +23,11 @@
       "Bash(npx vitest run:*)",
       "Bash(powershell:*)",
       "Bash(npm ls:*)",
-      "Bash(npm run seed:*)"
+      "Bash(npm run seed:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npx tsx:*)",
+      "Bash(dir:*)",
+      "Bash(npx next build:*)"
     ]
   }
 }

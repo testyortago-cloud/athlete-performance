@@ -10,12 +10,15 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { DailyLoadForm } from '../DailyLoadForm';
 import { deleteDailyLoadAction } from '../actions';
+import { AcwrGauge } from '@/components/charts/AcwrGauge';
+import { useToastStore } from '@/stores/toastStore';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { DailyLoad, Athlete } from '@/types';
 
 interface LoadDetailClientProps {
   load: DailyLoad;
   athletes: Athlete[];
+  acwr?: number | null;
 }
 
 function getRpeBadgeVariant(rpe: number): 'success' | 'warning' | 'danger' {
@@ -24,8 +27,9 @@ function getRpeBadgeVariant(rpe: number): 'success' | 'warning' | 'danger' {
   return 'danger';
 }
 
-export function LoadDetailClient({ load, athletes }: LoadDetailClientProps) {
+export function LoadDetailClient({ load, athletes, acwr }: LoadDetailClientProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -34,6 +38,7 @@ export function LoadDetailClient({ load, athletes }: LoadDetailClientProps) {
     setDeleting(true);
     const result = await deleteDailyLoadAction(load.id);
     if (result.success) {
+      addToast('Load entry deleted successfully', 'success');
       router.push('/load-monitoring');
       router.refresh();
     }
@@ -76,7 +81,15 @@ export function LoadDetailClient({ load, athletes }: LoadDetailClientProps) {
         }
       />
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* ACWR Gauge */}
+        {acwr != null && (
+          <Card className="flex flex-col items-center justify-center">
+            <h3 className="mb-2 text-sm font-semibold text-black">Athlete ACWR</h3>
+            <AcwrGauge value={acwr} size="md" />
+          </Card>
+        )}
+
         <Card>
           <h3 className="mb-4 text-lg font-semibold text-black">Load Details</h3>
           <dl className="space-y-3">

@@ -68,6 +68,25 @@ export async function updateInjuryAction(id: string, formData: FormData) {
   }
 }
 
+export async function updateInjuryStatusAction(id: string, status: string) {
+  const session = await auth();
+  if (!session) throw new Error('Unauthorized');
+
+  const validStatuses = ['active', 'rehab', 'monitoring', 'resolved'];
+  if (!validStatuses.includes(status)) {
+    return { error: 'Invalid status' };
+  }
+
+  try {
+    await updateInjury(id, { status: status as 'active' | 'rehab' | 'monitoring' | 'resolved' });
+    revalidatePath('/injuries');
+    revalidatePath(`/injuries/${id}`);
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to update status' };
+  }
+}
+
 export async function deleteInjuryAction(id: string) {
   const session = await auth();
   if (!session) throw new Error('Unauthorized');

@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { InjuryForm } from '../InjuryForm';
 import { deleteInjuryAction } from '../actions';
+import { useToastStore } from '@/stores/toastStore';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { Injury, Athlete } from '@/types';
 
@@ -20,6 +21,7 @@ interface InjuryDetailClientProps {
 
 export function InjuryDetailClient({ injury, athletes }: InjuryDetailClientProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -28,6 +30,7 @@ export function InjuryDetailClient({ injury, athletes }: InjuryDetailClientProps
     setDeleting(true);
     const result = await deleteInjuryAction(injury.id);
     if (result.success) {
+      addToast('Injury deleted successfully', 'success');
       router.push('/injuries');
       router.refresh();
     }
@@ -125,14 +128,19 @@ export function InjuryDetailClient({ injury, athletes }: InjuryDetailClientProps
             <div className="flex justify-between">
               <dt className="text-sm text-gray-500">Days Lost</dt>
               <dd className="text-sm font-medium text-black">
-                {injury.status === 'active' ? 'Ongoing' : (injury.daysLost != null ? injury.daysLost : '—')}
+                {injury.status !== 'resolved' ? 'Ongoing' : (injury.daysLost != null ? injury.daysLost : '—')}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-sm text-gray-500">Status</dt>
               <dd>
-                <Badge variant={injury.status === 'active' ? 'danger' : 'success'}>
-                  {injury.status === 'active' ? 'Active' : 'Resolved'}
+                <Badge variant={
+                  injury.status === 'active' ? 'danger'
+                    : injury.status === 'rehab' ? 'warning'
+                    : injury.status === 'resolved' ? 'success'
+                    : 'default'
+                }>
+                  {injury.status.charAt(0).toUpperCase() + injury.status.slice(1)}
                 </Badge>
               </dd>
             </div>

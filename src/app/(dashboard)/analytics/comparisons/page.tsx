@@ -4,7 +4,7 @@ import { getSports } from '@/lib/services/sportService';
 import { getMetricsBySport } from '@/lib/services/metricService';
 import { getTestingSessions, getTrialDataBySession } from '@/lib/services/testingSessionService';
 import { ComparisonsClient } from './ComparisonsClient';
-import type { Metric, AthleteRanking, Athlete } from '@/types';
+import type { Metric, AthleteRanking, Athlete, PerformanceTrend } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +12,7 @@ interface TrialWithSession {
   metricId: string;
   bestScore: number;
   athleteId: string;
+  date: string;
 }
 
 export default async function ComparisonsPage() {
@@ -41,6 +42,7 @@ export default async function ComparisonsPage() {
           metricId: trial.metricId,
           bestScore: trial.bestScore,
           athleteId: session.athleteId,
+          date: session.date,
         });
       }
     }
@@ -87,6 +89,22 @@ export default async function ComparisonsPage() {
     }
   }
 
+  // Build performance trends: best score per athlete per metric per session date
+  const performanceTrends: PerformanceTrend[] = [];
+  for (const trial of trialResults) {
+    const athlete = athletes.find((a) => a.id === trial.athleteId);
+    const metric = allMetrics.find((m) => m.id === trial.metricId);
+    if (athlete && metric) {
+      performanceTrends.push({
+        date: trial.date,
+        metricName: metric.name,
+        bestScore: trial.bestScore,
+        averageScore: trial.bestScore,
+        athleteName: athlete.name,
+      });
+    }
+  }
+
   return (
     <Suspense>
       <ComparisonsClient
@@ -95,6 +113,7 @@ export default async function ComparisonsPage() {
         sportMetricsMap={sportMetricsMap}
         rankingsMap={rankingsMap}
         heatmapData={heatmapData}
+        performanceTrends={performanceTrends}
       />
     </Suspense>
   );

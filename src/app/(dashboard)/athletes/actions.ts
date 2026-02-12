@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { athleteSchema } from '@/lib/validations';
-import { createAthlete, updateAthlete, deleteAthlete } from '@/lib/services/athleteService';
+import { createAthlete, updateAthlete, deleteAthlete, updateAthleteNotes } from '@/lib/services/athleteService';
+import { uploadAthletePhoto } from '@/lib/storage';
 
 export async function createAthleteAction(formData: FormData) {
   const session = await auth();
@@ -24,11 +25,19 @@ export async function createAthleteAction(formData: FormData) {
   }
 
   try {
-    await createAthlete(parsed.data);
+    const photo = formData.get('photo') as File | null;
+    let photoUrl: string | undefined;
+    if (photo && photo.size > 0) {
+      photoUrl = await uploadAthletePhoto(photo, parsed.data.name);
+    }
+
+    await createAthlete({ ...parsed.data, photoUrl });
     revalidatePath('/athletes');
     return { success: true };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : 'Failed to create athlete' };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : typeof e === 'object' && e !== null && 'message' in e ? String((e as { message: unknown }).message) : String(e);
+    console.error('createAthlete error:', e);
+    return { error: msg || 'Failed to create athlete' };
   }
 }
 
@@ -53,8 +62,14 @@ export async function updateAthleteAction(id: string, formData: FormData) {
   }
 
   try {
+    const photo = formData.get('photo') as File | null;
+    let photoUrl: string | undefined;
+    if (photo && photo.size > 0) {
+      photoUrl = await uploadAthletePhoto(photo, parsed.data.name);
+    }
+
     // Pass programId explicitly (empty string clears it, undefined skips it)
-    await updateAthlete(id, { ...parsed.data, programId: programIdRaw || '' });
+    await updateAthlete(id, { ...parsed.data, programId: programIdRaw || '', photoUrl });
     revalidatePath('/athletes');
     revalidatePath(`/athletes/${id}`);
     return { success: true };
@@ -73,5 +88,44 @@ export async function deleteAthleteAction(id: string) {
     return { success: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Failed to delete athlete' };
+  }
+}
+
+export async function bulkUpdateStatusAction(ids: string[], status: 'active' | 'inactive') {
+  const session = await auth();
+  if (!session) throw new Error('Unauthorized');
+
+  try {
+    await Promise.all(ids.map((id) => updateAthlete(id, { status })));
+    revalidatePath('/athletes');
+    return { success: true, count: ids.length };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to update athletes' };
+  }
+}
+
+export async function bulkAssignProgramAction(ids: string[], programId: string) {
+  const session = await auth();
+  if (!session) throw new Error('Unauthorized');
+
+  try {
+    await Promise.all(ids.map((id) => updateAthlete(id, { programId: programId || '' })));
+    revalidatePath('/athletes');
+    return { success: true, count: ids.length };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to assign program' };
+  }
+}
+
+export async function updateAthleteNotesAction(id: string, notes: string) {
+  const session = await auth();
+  if (!session) throw new Error('Unauthorized');
+
+  try {
+    await updateAthleteNotes(id, notes);
+    revalidatePath(`/athletes/${id}`);
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to update notes' };
   }
 }

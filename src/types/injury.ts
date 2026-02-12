@@ -1,5 +1,5 @@
 export type InjuryType = 'injury' | 'illness';
-export type InjuryStatus = 'active' | 'resolved';
+export type InjuryStatus = 'active' | 'rehab' | 'monitoring' | 'resolved';
 
 export interface Injury {
   id: string;

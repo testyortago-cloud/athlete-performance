@@ -22,6 +22,8 @@ export const sportSchema = z.object({
 export const trainingProgramSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   description: z.string().max(500).optional().default(''),
+  startDate: z.string().nullable().optional().default(null),
+  durationWeeks: z.coerce.number().int().min(1).max(104).nullable().optional().default(null),
 });
 
 export const metricCategorySchema = z.object({
@@ -65,7 +67,7 @@ export const injurySchema = z.object({
   bodyRegion: z.string().min(1, 'Body region is required').max(100),
   dateOccurred: z.string().min(1, 'Date occurred is required'),
   dateResolved: z.string().nullable().default(null),
-  status: z.enum(['active', 'resolved']),
+  status: z.enum(['active', 'rehab', 'monitoring', 'resolved']),
 });
 
 export const dailyLoadSchema = z.object({

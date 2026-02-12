@@ -6,14 +6,14 @@ function mapRecord(record: { id: string; fields: Record<string, unknown> }): Inj
     id: record.id,
     athleteId: Array.isArray(record.fields.Athlete) ? record.fields.Athlete[0] : (record.fields.Athlete as string) || '',
     athleteName: (record.fields.AthleteName as string) || undefined,
-    type: ((record.fields.Type as string) || 'injury') as 'injury' | 'illness',
+    type: (((record.fields.Type as string) || 'Injury').toLowerCase()) as 'injury' | 'illness',
     description: (record.fields.Description as string) || '',
     mechanism: (record.fields.Mechanism as string) || '',
     bodyRegion: (record.fields.BodyRegion as string) || '',
     dateOccurred: (record.fields.DateOccurred as string) || '',
     dateResolved: (record.fields.DateResolved as string) || null,
     daysLost: (record.fields.DaysLost as number) ?? null,
-    status: ((record.fields.Status as string) || 'active') as 'active' | 'resolved',
+    status: (((record.fields.Status as string) || 'Active').toLowerCase()) as Injury['status'],
     createdAt: (record.fields.Created as string) || new Date().toISOString(),
   };
 }
@@ -29,7 +29,8 @@ export async function getInjuries(options?: {
     filterParts.push(`FIND("${options.athleteId}", ARRAYJOIN({Athlete}))`);
   }
   if (options?.status) {
-    filterParts.push(`{Status} = "${options.status}"`);
+    const s = options.status.charAt(0).toUpperCase() + options.status.slice(1);
+    filterParts.push(`{Status} = "${s}"`);
   }
   if (options?.search) {
     filterParts.push(`OR(FIND(LOWER("${options.search}"), LOWER({Description})), FIND(LOWER("${options.search}"), LOWER({BodyRegion})))`);
@@ -65,14 +66,14 @@ export async function createInjury(data: InjuryFormData): Promise<Injury> {
 
   const record = await createRecord(TABLES.INJURIES, {
     Athlete: [data.athleteId],
-    Type: data.type,
+    Type: data.type.charAt(0).toUpperCase() + data.type.slice(1),
     Description: data.description,
     Mechanism: data.mechanism,
     BodyRegion: data.bodyRegion,
     DateOccurred: data.dateOccurred,
     DateResolved: data.dateResolved,
     DaysLost: daysLost,
-    Status: data.status,
+    Status: data.status.charAt(0).toUpperCase() + data.status.slice(1),
   });
   return mapRecord(record);
 }
@@ -80,13 +81,13 @@ export async function createInjury(data: InjuryFormData): Promise<Injury> {
 export async function updateInjury(id: string, data: Partial<InjuryFormData>): Promise<Injury> {
   const fields: Record<string, unknown> = {};
   if (data.athleteId !== undefined) fields.Athlete = [data.athleteId];
-  if (data.type !== undefined) fields.Type = data.type;
+  if (data.type !== undefined) fields.Type = data.type.charAt(0).toUpperCase() + data.type.slice(1);
   if (data.description !== undefined) fields.Description = data.description;
   if (data.mechanism !== undefined) fields.Mechanism = data.mechanism;
   if (data.bodyRegion !== undefined) fields.BodyRegion = data.bodyRegion;
   if (data.dateOccurred !== undefined) fields.DateOccurred = data.dateOccurred;
   if (data.dateResolved !== undefined) fields.DateResolved = data.dateResolved;
-  if (data.status !== undefined) fields.Status = data.status;
+  if (data.status !== undefined) fields.Status = data.status.charAt(0).toUpperCase() + data.status.slice(1);
 
   // Recompute daysLost if dates changed
   if (data.dateOccurred !== undefined || data.dateResolved !== undefined) {

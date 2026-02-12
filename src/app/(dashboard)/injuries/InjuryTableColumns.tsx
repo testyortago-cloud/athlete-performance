@@ -1,6 +1,12 @@
 import { Badge } from '@/components/ui/Badge';
 import type { Injury, ColumnDef } from '@/types';
 
+function getDaysLostVariant(days: number): 'default' | 'warning' | 'danger' {
+  if (days >= 28) return 'danger';
+  if (days >= 7) return 'warning';
+  return 'default';
+}
+
 export const injuryColumns: ColumnDef<Injury>[] = [
   {
     key: 'athleteName',
@@ -8,6 +14,9 @@ export const injuryColumns: ColumnDef<Injury>[] = [
     sortable: true,
     filterable: true,
     filterType: 'text',
+    render: (_value, injury) => (
+      <span className="font-medium">{injury.athleteName}</span>
+    ),
   },
   {
     key: 'type',
@@ -53,21 +62,44 @@ export const injuryColumns: ColumnDef<Injury>[] = [
     filterType: 'select',
     filterOptions: [
       { label: 'Active', value: 'active' },
+      { label: 'Rehab', value: 'rehab' },
+      { label: 'Monitoring', value: 'monitoring' },
       { label: 'Resolved', value: 'resolved' },
     ],
-    render: (value) => (
-      <Badge variant={value === 'active' ? 'danger' : 'success'}>
-        {(value as string) === 'active' ? 'Active' : 'Resolved'}
-      </Badge>
-    ),
+    render: (value) => {
+      const statusMap: Record<string, { variant: 'danger' | 'warning' | 'default' | 'success'; label: string }> = {
+        active: { variant: 'danger', label: 'Active' },
+        rehab: { variant: 'warning', label: 'Rehab' },
+        monitoring: { variant: 'default', label: 'Monitoring' },
+        resolved: { variant: 'success', label: 'Resolved' },
+      };
+      const config = statusMap[value as string] || statusMap.active;
+      return <Badge variant={config.variant}>{config.label}</Badge>;
+    },
   },
   {
     key: 'daysLost',
     header: 'Days Lost',
     sortable: true,
     render: (value, injury) => {
-      if (injury.status === 'active') return 'Ongoing';
-      return value != null ? String(value) : '—';
+      if (injury.status !== 'resolved') {
+        const daysSince = Math.ceil(
+          (Date.now() - new Date(injury.dateOccurred).getTime()) / 86400000
+        );
+        return (
+          <Badge variant="danger">
+            {daysSince}d (ongoing)
+          </Badge>
+        );
+      }
+      if (value != null) {
+        return (
+          <Badge variant={getDaysLostVariant(value as number)}>
+            {String(value)}d
+          </Badge>
+        );
+      }
+      return '—';
     },
   },
 ];

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useToastStore } from '@/stores/toastStore';
 import type { Sport } from '@/types';
 import { createSportAction, updateSportAction } from './actions';
 
@@ -14,6 +15,7 @@ interface SportFormProps {
 
 export function SportForm({ sport, onSuccess }: SportFormProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const isEdit = !!sport;
@@ -33,6 +35,7 @@ export function SportForm({ sport, onSuccess }: SportFormProps) {
       if (result.error) {
         setError(result.error);
       } else {
+        addToast(isEdit ? 'Sport updated successfully' : 'Sport created successfully', 'success');
         onSuccess?.();
         router.refresh();
       }

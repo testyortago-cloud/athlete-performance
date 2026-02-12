@@ -21,6 +21,7 @@ export interface Athlete {
   programName?: string;
   position: string;
   status: 'active' | 'inactive';
+  notes?: string;
   photo?: AirtableAttachment;
   createdAt: string;
 }
@@ -32,6 +33,7 @@ export interface AthleteFormData {
   programId?: string;
   position: string;
   status: 'active' | 'inactive';
+  photoUrl?: string;
 }
 
 export interface AthleteListFilters {

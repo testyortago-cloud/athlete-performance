@@ -28,7 +28,7 @@ export default async function DashboardPage() {
 
   // KPIs
   const activeAthletes = athletes.filter((a) => a.status === 'active').length;
-  const activeInjuries = injuries.filter((i) => i.status === 'active').length;
+  const activeInjuries = injuries.filter((i) => i.status !== 'resolved').length;
 
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
@@ -47,6 +47,44 @@ export default async function DashboardPage() {
   const riskIndicators = computeAthleteRiskIndicators(athletes, dailyLoads, injuries, thresholds);
   const alerts = computeRiskAlerts(riskIndicators, thresholds);
 
+  // Sparkline data — 7-day snapshots for KPI cards
+  const sparklineAthletes: number[] = [];
+  const sparklineInjuries: number[] = [];
+  const sparklineLoad: number[] = [];
+  const sparklineSessions: number[] = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const day = new Date(now.getTime() - i * 86400000);
+    const dayStr = day.toISOString().split('T')[0];
+
+    // Count active athletes on that day (approximate — use total active)
+    sparklineAthletes.push(activeAthletes);
+
+    // Count active injuries on that day
+    const injCount = injuries.filter((inj) => {
+      const occurred = inj.dateOccurred <= dayStr;
+      const resolved = inj.dateResolved ? inj.dateResolved <= dayStr : false;
+      return occurred && inj.status !== 'resolved' && !resolved;
+    }).length;
+    sparklineInjuries.push(injCount);
+
+    // Average load on that day
+    const dayLoads = dailyLoads.filter((l) => l.date === dayStr);
+    const dayAvg = dayLoads.length > 0
+      ? Math.round(dayLoads.reduce((s, l) => s + l.trainingLoad, 0) / dayLoads.length)
+      : 0;
+    sparklineLoad.push(dayAvg);
+
+    // Sessions count up to that day in the month
+    const dayDate = new Date(dayStr);
+    const monthStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), 1);
+    const sessCount = sessions.filter((s) => {
+      const d = new Date(s.date);
+      return d >= monthStart && d <= dayDate;
+    }).length;
+    sparklineSessions.push(sessCount);
+  }
+
   return (
     <Suspense>
       <DashboardClient
@@ -56,6 +94,12 @@ export default async function DashboardPage() {
           avgLoad,
           sessionsThisMonth,
         }}
+        sparklines={{
+          athletes: sparklineAthletes,
+          injuries: sparklineInjuries,
+          load: sparklineLoad,
+          sessions: sparklineSessions,
+        }}
         injuryByRegion={injuryByRegion}
         injuryByType={injuryByType}
         loadTrends={loadTrends}
@@ -63,6 +107,7 @@ export default async function DashboardPage() {
         alerts={alerts}
         athletes={athletes}
         sports={sports}
+        lastUpdated={new Date().toISOString()}
       />
     </Suspense>
   );

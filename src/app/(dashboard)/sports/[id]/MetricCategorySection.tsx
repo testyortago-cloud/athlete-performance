@@ -9,6 +9,7 @@ import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { MetricCategoryForm } from './MetricCategoryForm';
 import { MetricForm } from './MetricForm';
 import { deleteCategoryAction, deleteMetricAction } from './actions';
+import { useToastStore } from '@/stores/toastStore';
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react';
 import type { MetricCategory, Metric } from '@/types';
 
@@ -20,6 +21,7 @@ interface MetricCategorySectionProps {
 
 export function MetricCategorySection({ category, metrics, sportId }: MetricCategorySectionProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showEditCategory, setShowEditCategory] = useState(false);
   const [showDeleteCategory, setShowDeleteCategory] = useState(false);
@@ -31,7 +33,10 @@ export function MetricCategorySection({ category, metrics, sportId }: MetricCate
   async function handleDeleteCategory() {
     setDeleteLoading(true);
     const result = await deleteCategoryAction(category.id, sportId);
-    if (result.success) router.refresh();
+    if (result.success) {
+      addToast('Category deleted successfully', 'success');
+      router.refresh();
+    }
     setDeleteLoading(false);
     setShowDeleteCategory(false);
   }
@@ -40,7 +45,10 @@ export function MetricCategorySection({ category, metrics, sportId }: MetricCate
     if (!deletingMetric) return;
     setDeleteLoading(true);
     const result = await deleteMetricAction(deletingMetric.id, sportId);
-    if (result.success) router.refresh();
+    if (result.success) {
+      addToast('Metric deleted successfully', 'success');
+      router.refresh();
+    }
     setDeleteLoading(false);
     setDeletingMetric(null);
   }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useToastStore } from '@/stores/toastStore';
 import type { MetricCategory } from '@/types';
 import { createCategoryAction, updateCategoryAction } from './actions';
 
@@ -16,6 +17,7 @@ interface MetricCategoryFormProps {
 
 export function MetricCategoryForm({ sportId, category, nextSortOrder = 0, onSuccess }: MetricCategoryFormProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const isEdit = !!category;
@@ -36,6 +38,7 @@ export function MetricCategoryForm({ sportId, category, nextSortOrder = 0, onSuc
       if (result.error) {
         setError(result.error);
       } else {
+        addToast(isEdit ? 'Category updated successfully' : 'Category created successfully', 'success');
         onSuccess?.();
         router.refresh();
       }

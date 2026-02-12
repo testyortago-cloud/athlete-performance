@@ -70,3 +70,24 @@ export async function deleteDailyLoadAction(id: string) {
     return { error: e instanceof Error ? e.message : 'Failed to delete load entry' };
   }
 }
+
+export async function batchCreateDailyLoadAction(
+  entries: { athleteId: string; date: string; rpe: number; durationMinutes: number; sessionType: string }[]
+) {
+  const session = await auth();
+  if (!session) throw new Error('Unauthorized');
+
+  try {
+    let count = 0;
+    for (const entry of entries) {
+      const parsed = dailyLoadSchema.safeParse(entry);
+      if (!parsed.success) continue;
+      await createDailyLoad(parsed.data);
+      count++;
+    }
+    revalidatePath('/load-monitoring');
+    return { success: true, count };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to create batch entries' };
+  }
+}

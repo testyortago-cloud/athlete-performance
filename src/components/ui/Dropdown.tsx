@@ -38,7 +38,15 @@ export function Dropdown({ trigger, children, align = 'left', className }: Dropd
 
   return (
     <div ref={ref} className={cn('relative inline-block', className)}>
-      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen); } }}
+        className="cursor-pointer"
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+      >
         {trigger}
       </div>
       {isOpen && (
@@ -47,6 +55,7 @@ export function Dropdown({ trigger, children, align = 'left', className }: Dropd
             'absolute top-full mt-1 z-50 min-w-[180px] rounded-md border border-border bg-white py-1 shadow-lg',
             align === 'right' ? 'right-0' : 'left-0'
           )}
+          role="menu"
         >
           <DropdownContext.Provider value={{ close }}>
             {children}
@@ -73,12 +82,13 @@ export function DropdownItem({ children, onClick, className, danger }: DropdownI
 
   return (
     <button
+      role="menuitem"
       onClick={() => {
         onClick?.();
         close();
       }}
       className={cn(
-        'flex w-full items-center px-3 py-2 text-sm transition-colors',
+        'flex w-full items-center px-3 py-2 text-sm transition-colors focus:outline-none focus:bg-muted',
         danger
           ? 'text-danger hover:bg-danger/5'
           : 'text-gray-700 hover:bg-muted',

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useToastStore } from '@/stores/toastStore';
 import type { Metric } from '@/types';
 import { createMetricAction, updateMetricAction } from './actions';
 
@@ -17,6 +18,7 @@ interface MetricFormProps {
 
 export function MetricForm({ sportId, categoryId, metric, onSuccess }: MetricFormProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isDerived, setIsDerived] = useState(metric?.isDerived || false);
@@ -40,6 +42,7 @@ export function MetricForm({ sportId, categoryId, metric, onSuccess }: MetricFor
       if (result.error) {
         setError(result.error);
       } else {
+        addToast(isEdit ? 'Metric updated successfully' : 'Metric created successfully', 'success');
         onSuccess?.();
         router.refresh();
       }

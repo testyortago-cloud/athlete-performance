@@ -31,7 +31,7 @@ export async function getDashboardKpis(): Promise<KpiCardData[]> {
   ]);
 
   const activeAthletes = athletes.filter((a) => a.status === 'active').length;
-  const activeInjuries = injuries.filter((i) => i.status === 'active').length;
+  const activeInjuries = injuries.filter((i) => i.status !== 'resolved').length;
 
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
@@ -187,12 +187,22 @@ export function computeAthleteRiskIndicators(
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
   const twentyEightDaysAgo = new Date(now.getTime() - 28 * 86400000);
 
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+
   return athletes.map((athlete) => {
     const athleteLoads = dailyLoads.filter((l) => l.athleteId === athlete.id);
 
     // Acute load: sum of last 7 days
     const acuteLoad = athleteLoads
       .filter((l) => new Date(l.date) >= sevenDaysAgo)
+      .reduce((sum, l) => sum + l.trainingLoad, 0);
+
+    // Previous week acute load: days 8-14
+    const prevAcuteLoad = athleteLoads
+      .filter((l) => {
+        const d = new Date(l.date);
+        return d >= fourteenDaysAgo && d < sevenDaysAgo;
+      })
       .reduce((sum, l) => sum + l.trainingLoad, 0);
 
     // Chronic load: average weekly load over last 28 days
@@ -205,9 +215,22 @@ export function computeAthleteRiskIndicators(
     // ACWR
     const acwr = chronicLoad > 0 ? Math.round((acuteLoad / chronicLoad) * 100) / 100 : 0;
 
+    // Trajectory: compare this week's load to last week's load
+    let trajectory: 'improving' | 'stable' | 'worsening' = 'stable';
+    if (prevAcuteLoad > 0) {
+      const loadChangePercent = ((acuteLoad - prevAcuteLoad) / prevAcuteLoad) * 100;
+      if (acwr > 1.3) {
+        // When ACWR is high, decreasing load is improving
+        trajectory = loadChangePercent < -10 ? 'improving' : loadChangePercent > 10 ? 'worsening' : 'stable';
+      } else {
+        // When ACWR is in safe range, stable or slight increase is fine
+        trajectory = loadChangePercent > 30 ? 'worsening' : loadChangePercent < -20 ? 'improving' : 'stable';
+      }
+    }
+
     // Active injuries for this athlete
     const activeInjuries = injuries.filter(
-      (i) => i.athleteId === athlete.id && i.status === 'active'
+      (i) => i.athleteId === athlete.id && i.status !== 'resolved'
     ).length;
 
     return {
@@ -218,6 +241,7 @@ export function computeAthleteRiskIndicators(
       acwr,
       riskLevel: computeRiskLevel(acwr, thresholds),
       activeInjuries,
+      trajectory,
     };
   });
 }

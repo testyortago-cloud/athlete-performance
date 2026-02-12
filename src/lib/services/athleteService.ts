@@ -12,7 +12,8 @@ function mapRecord(record: { id: string; fields: Record<string, unknown> }): Ath
     programId: Array.isArray(record.fields.Program) ? record.fields.Program[0] : (record.fields.Program as string) || undefined,
     programName: (record.fields.ProgramName as string) || undefined,
     position: (record.fields.Position as string) || '',
-    status: ((record.fields.Status as string) || 'active') as 'active' | 'inactive',
+    status: (((record.fields.Status as string) || 'Active').toLowerCase()) as 'active' | 'inactive',
+    notes: (record.fields.Notes as string) || undefined,
     photo: photos?.[0] || undefined,
     createdAt: (record.fields.Created as string) || new Date().toISOString(),
   };
@@ -32,7 +33,8 @@ export async function getAthletes(options?: {
     filterParts.push(`FIND("${options.sportId}", ARRAYJOIN({Sport}))`);
   }
   if (options?.status) {
-    filterParts.push(`{Status} = "${options.status}"`);
+    const s = options.status.charAt(0).toUpperCase() + options.status.slice(1);
+    filterParts.push(`{Status} = "${s}"`);
   }
 
   const filterByFormula = filterParts.length > 1
@@ -60,7 +62,8 @@ export async function createAthlete(data: AthleteFormData): Promise<Athlete> {
     Sport: [data.sportId],
     ...(data.programId ? { Program: [data.programId] } : {}),
     Position: data.position,
-    Status: data.status,
+    Status: data.status.charAt(0).toUpperCase() + data.status.slice(1),
+    ...(data.photoUrl ? { Photo: [{ url: data.photoUrl }] } : {}),
   });
   return mapRecord(record);
 }
@@ -72,9 +75,15 @@ export async function updateAthlete(id: string, data: Partial<AthleteFormData>):
   if (data.sportId !== undefined) fields.Sport = [data.sportId];
   if (data.programId !== undefined) fields.Program = data.programId ? [data.programId] : [];
   if (data.position !== undefined) fields.Position = data.position;
-  if (data.status !== undefined) fields.Status = data.status;
+  if (data.status !== undefined) fields.Status = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+  if (data.photoUrl) fields.Photo = [{ url: data.photoUrl }];
 
   const record = await updateRecord(TABLES.ATHLETES, id, fields);
+  return mapRecord(record);
+}
+
+export async function updateAthleteNotes(id: string, notes: string): Promise<Athlete> {
+  const record = await updateRecord(TABLES.ATHLETES, id, { Notes: notes });
   return mapRecord(record);
 }
 

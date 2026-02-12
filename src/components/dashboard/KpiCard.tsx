@@ -1,6 +1,7 @@
 'use client';
 
 import { Card } from '@/components/ui/Card';
+import { Sparkline } from '@/components/dashboard/Sparkline';
 import { cn } from '@/utils/cn';
 import { Users, AlertTriangle, Activity, ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -19,12 +20,14 @@ interface KpiCardProps {
     direction: 'up' | 'down';
     label: string;
   };
+  sparklineData?: number[];
+  sparklineColor?: string;
   icon?: string;
   onClick?: () => void;
   className?: string;
 }
 
-export function KpiCard({ label, value, trend, icon, onClick, className }: KpiCardProps) {
+export function KpiCard({ label, value, trend, sparklineData, sparklineColor, icon, onClick, className }: KpiCardProps) {
   return (
     <Card
       className={cn(
@@ -40,11 +43,24 @@ export function KpiCard({ label, value, trend, icon, onClick, className }: KpiCa
         disabled={!onClick}
         className="flex w-full flex-col items-start text-left"
       >
-        {icon && iconMap[icon] && (
-          <div className="mb-2 text-gray-400">{iconMap[icon]}</div>
-        )}
-        <p className="text-3xl font-bold text-black">{value}</p>
-        <p className="mt-1 text-sm text-gray-500">{label}</p>
+        <div className="flex w-full items-start justify-between">
+          <div className="flex-1">
+            {icon && iconMap[icon] && (
+              <div className="mb-2 text-gray-400">{iconMap[icon]}</div>
+            )}
+            <p className="text-3xl font-bold text-black">{value}</p>
+            <p className="mt-1 text-sm text-gray-500">{label}</p>
+          </div>
+          {sparklineData && sparklineData.length >= 2 && (
+            <Sparkline
+              data={sparklineData}
+              color={sparklineColor || '#000000'}
+              height={36}
+              width={80}
+              className="mt-1"
+            />
+          )}
+        </div>
         {trend && (
           <div className="mt-2 flex items-center gap-1">
             {trend.direction === 'up' ? (

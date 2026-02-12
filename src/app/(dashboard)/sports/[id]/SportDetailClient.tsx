@@ -10,6 +10,7 @@ import { SportForm } from '../SportForm';
 import { MetricCategorySection } from './MetricCategorySection';
 import { MetricCategoryForm } from './MetricCategoryForm';
 import { deleteSportAction } from '../actions';
+import { useToastStore } from '@/stores/toastStore';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import type { Sport, MetricCategory, Metric } from '@/types';
 
@@ -21,6 +22,7 @@ interface SportDetailClientProps {
 
 export function SportDetailClient({ sport, categories, metrics }: SportDetailClientProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -30,6 +32,7 @@ export function SportDetailClient({ sport, categories, metrics }: SportDetailCli
     setDeleting(true);
     const result = await deleteSportAction(sport.id);
     if (result.success) {
+      addToast('Sport deleted successfully', 'success');
       router.push('/sports');
       router.refresh();
     }

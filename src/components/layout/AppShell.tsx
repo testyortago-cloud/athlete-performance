@@ -7,6 +7,7 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { ContentArea } from './ContentArea';
 import { MobileMenuOverlay } from './MobileMenuOverlay';
+import { MobileBottomNav } from './MobileBottomNav';
 import { cn } from '@/utils/cn';
 
 interface AppShellProps {
@@ -37,15 +38,20 @@ export function AppShell({ children }: AppShellProps) {
         <Sidebar />
       )}
 
-      {/* Mobile overlay */}
-      {isMobile && <MobileMenuOverlay />}
+      {/* Mobile overlay + bottom nav */}
+      {isMobile && (
+        <>
+          <MobileMenuOverlay />
+          <MobileBottomNav />
+        </>
+      )}
 
       {/* Content area with margin for sidebar */}
       <div
         className={cn(
           'pt-[var(--header-height)] transition-all duration-250 ease-in-out',
           isMobile
-            ? 'ml-0'
+            ? 'ml-0 pb-16'
             : isCollapsed
               ? 'ml-[var(--sidebar-collapsed-width)]'
               : 'ml-[var(--sidebar-width)]'

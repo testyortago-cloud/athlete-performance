@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import type { Injury, Athlete } from '@/types';
+import { useToastStore } from '@/stores/toastStore';
+import type { Injury, Athlete, InjuryStatus } from '@/types';
 import { createInjuryAction, updateInjuryAction } from './actions';
 
 interface InjuryFormProps {
@@ -16,11 +17,12 @@ interface InjuryFormProps {
 
 export function InjuryForm({ injury, athletes, onSuccess }: InjuryFormProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [dateOccurred, setDateOccurred] = useState(injury?.dateOccurred || '');
   const [dateResolved, setDateResolved] = useState(injury?.dateResolved || '');
-  const [status, setStatus] = useState(injury?.status || 'active');
+  const [status, setStatus] = useState<InjuryStatus>(injury?.status || 'active');
 
   const isEdit = !!injury;
 
@@ -51,6 +53,7 @@ export function InjuryForm({ injury, athletes, onSuccess }: InjuryFormProps) {
       if (result.error) {
         setError(result.error);
       } else {
+        addToast(isEdit ? 'Injury updated successfully' : 'Injury logged successfully', 'success');
         onSuccess?.();
         router.refresh();
       }
@@ -156,10 +159,12 @@ export function InjuryForm({ injury, athletes, onSuccess }: InjuryFormProps) {
         label="Status"
         options={[
           { label: 'Active', value: 'active' },
+          { label: 'Rehab', value: 'rehab' },
+          { label: 'Monitoring', value: 'monitoring' },
           { label: 'Resolved', value: 'resolved' },
         ]}
         value={status}
-        onChange={(e) => setStatus(e.target.value as 'active' | 'resolved')}
+        onChange={(e) => setStatus(e.target.value as InjuryStatus)}
       />
 
       <div className="flex justify-end gap-3 pt-2">

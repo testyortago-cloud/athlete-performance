@@ -49,6 +49,7 @@ export interface RiskIndicator {
   acwr: number;
   riskLevel: 'low' | 'moderate' | 'high';
   activeInjuries: number;
+  trajectory?: 'improving' | 'stable' | 'worsening';
 }
 
 export interface AthleteRanking {

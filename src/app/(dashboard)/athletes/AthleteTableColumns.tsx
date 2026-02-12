@@ -11,12 +11,20 @@ export const athleteColumns: ColumnDef<Athlete>[] = [
     filterType: 'text',
     render: (_value, athlete) => (
       <div className="flex items-center gap-3">
-        <Avatar
-          src={athlete.photo?.thumbnails?.small?.url ?? athlete.photo?.url}
-          name={athlete.name}
-          size="sm"
-        />
-        <span>{athlete.name}</span>
+        <div className="relative">
+          <Avatar
+            src={athlete.photo?.thumbnails?.small?.url ?? athlete.photo?.url}
+            name={athlete.name}
+            size="sm"
+          />
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
+              athlete.status === 'active' ? 'bg-success' : 'bg-gray-500'
+            }`}
+            title={athlete.status === 'active' ? 'Active' : 'Inactive'}
+          />
+        </div>
+        <span className="font-medium">{athlete.name}</span>
       </div>
     ),
   },

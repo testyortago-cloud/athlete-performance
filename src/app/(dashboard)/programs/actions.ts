@@ -3,16 +3,23 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { trainingProgramSchema } from '@/lib/validations';
-import { createProgram, updateProgram, deleteProgram } from '@/lib/services/programService';
+import { createProgram, updateProgram, deleteProgram, getProgramById } from '@/lib/services/programService';
+
+function extractFormData(formData: FormData) {
+  const durationWeeksRaw = formData.get('durationWeeks') as string;
+  return {
+    name: formData.get('name') as string,
+    description: (formData.get('description') as string) || '',
+    startDate: (formData.get('startDate') as string) || null,
+    durationWeeks: durationWeeksRaw ? Number(durationWeeksRaw) : null,
+  };
+}
 
 export async function createProgramAction(formData: FormData) {
   const session = await auth();
   if (!session) throw new Error('Unauthorized');
 
-  const raw = {
-    name: formData.get('name') as string,
-    description: (formData.get('description') as string) || '',
-  };
+  const raw = extractFormData(formData);
 
   const parsed = trainingProgramSchema.safeParse(raw);
   if (!parsed.success) {
@@ -32,10 +39,7 @@ export async function updateProgramAction(id: string, formData: FormData) {
   const session = await auth();
   if (!session) throw new Error('Unauthorized');
 
-  const raw = {
-    name: formData.get('name') as string,
-    description: (formData.get('description') as string) || '',
-  };
+  const raw = extractFormData(formData);
 
   const parsed = trainingProgramSchema.safeParse(raw);
   if (!parsed.success) {
@@ -49,6 +53,27 @@ export async function updateProgramAction(id: string, formData: FormData) {
     return { success: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Failed to update program' };
+  }
+}
+
+export async function duplicateProgramAction(id: string) {
+  const session = await auth();
+  if (!session) throw new Error('Unauthorized');
+
+  try {
+    const existing = await getProgramById(id);
+    if (!existing) return { error: 'Program not found' };
+
+    await createProgram({
+      name: `${existing.name} (Copy)`,
+      description: existing.description,
+      startDate: null,
+      durationWeeks: existing.durationWeeks,
+    });
+    revalidatePath('/programs');
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to duplicate program' };
   }
 }
 

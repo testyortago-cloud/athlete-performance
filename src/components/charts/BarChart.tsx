@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
   Cell,
+  ReferenceLine,
 } from 'recharts';
 import { CHART_GRID, getChartColor } from './chartColors';
 
@@ -20,6 +21,13 @@ interface BarConfig {
   stackId?: string;
 }
 
+interface ReferenceLineConfig {
+  y: number;
+  label: string;
+  color: string;
+  strokeDasharray?: string;
+}
+
 interface AnalyticsBarChartProps {
   data: Record<string, unknown>[];
   xKey: string;
@@ -28,6 +36,7 @@ interface AnalyticsBarChartProps {
   onClick?: (data: Record<string, unknown>) => void;
   layout?: 'horizontal' | 'vertical';
   cellColors?: string[];
+  referenceLines?: ReferenceLineConfig[];
 }
 
 export function AnalyticsBarChart({
@@ -38,6 +47,7 @@ export function AnalyticsBarChart({
   onClick,
   layout = 'horizontal',
   cellColors,
+  referenceLines,
 }: AnalyticsBarChartProps) {
   const isVertical = layout === 'vertical';
 
@@ -75,6 +85,16 @@ export function AnalyticsBarChart({
           }}
           cursor={{ fill: 'rgba(0,0,0,0.04)' }}
         />
+        {referenceLines?.map((ref) => (
+          <ReferenceLine
+            key={ref.label}
+            y={ref.y}
+            stroke={ref.color}
+            strokeDasharray={ref.strokeDasharray || '6 3'}
+            strokeWidth={1.5}
+            label={{ value: ref.label, position: 'right', fontSize: 10, fill: ref.color }}
+          />
+        ))}
         {bars.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
         {bars.map((bar, i) => (
           <Bar

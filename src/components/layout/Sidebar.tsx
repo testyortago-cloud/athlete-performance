@@ -45,8 +45,10 @@ export function Sidebar() {
         'fixed left-0 top-[var(--header-height)] z-30 flex h-[calc(100vh-var(--header-height))] flex-col bg-black transition-all duration-250 ease-in-out',
         isCollapsed ? 'w-[var(--sidebar-collapsed-width)]' : 'w-[var(--sidebar-width)]'
       )}
+      role="navigation"
+      aria-label="Main navigation"
     >
-      <nav className="flex-1 overflow-y-auto py-2">
+      <nav className="flex-1 overflow-y-auto py-2" aria-label="Primary" data-tour="sidebar-nav">
         {mainNavItems.map((item) => (
           <SidebarNavItem
             key={item.href}
@@ -77,8 +79,9 @@ export function Sidebar() {
 
         <button
           onClick={toggleCollapse}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
-            'flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:text-white',
+            'flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-inset',
             isCollapsed && 'justify-center px-0'
           )}
         >

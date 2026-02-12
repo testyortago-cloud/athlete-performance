@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useToastStore } from '@/stores/toastStore';
 import type { DailyLoad, Athlete } from '@/types';
 import { createDailyLoadAction, updateDailyLoadAction } from './actions';
 
@@ -18,6 +19,7 @@ const today = new Date().toISOString().split('T')[0];
 
 export function DailyLoadForm({ load, athletes, onSuccess }: DailyLoadFormProps) {
   const router = useRouter();
+  const { addToast } = useToastStore();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rpe, setRpe] = useState(load?.rpe ?? 5);
@@ -53,6 +55,7 @@ export function DailyLoadForm({ load, athletes, onSuccess }: DailyLoadFormProps)
       if (result.error) {
         setError(result.error);
       } else {
+        addToast(isEdit ? 'Load entry updated successfully' : 'Load entry added successfully', 'success');
         onSuccess?.();
         router.refresh();
       }

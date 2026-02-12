@@ -1,23 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-:root {
-  --color-black: #000000;
-  --color-white: #FFFFFF;
-  --color-surface: #F2F2F2;
-  --color-muted: #F7F7F7;
-  --color-border: #E0E0E0;
-  --color-gray-500: #999999;
-  --color-gray-700: #444444;
-  --color-dark: #111111;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --sidebar-width: 260px;
-  --sidebar-collapsed-width: 72px;
-  --header-height: 64px;
-}
-
 @theme inline {
   --color-surface: #F2F2F2;
   --color-muted: #F7F7F7;
@@ -34,6 +17,12 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
+:root {
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --header-height: 64px;
+}
+
 body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   background: var(--color-surface);
@@ -45,6 +34,30 @@ body {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+}
+
+/* Focus-visible styles for keyboard navigation accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-black);
+  outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip link for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 @keyframes toast-slide-in {

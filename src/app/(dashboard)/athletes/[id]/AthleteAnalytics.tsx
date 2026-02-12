@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { KpiCard } from '@/components/dashboard/KpiCard';
 import { ChartCard } from '@/components/charts/ChartCard';
 import { AnalyticsLineChart } from '@/components/charts/LineChart';
 import { AnalyticsAreaChart } from '@/components/charts/AreaChart';
 import { MetricSlicer } from '@/components/dashboard/MetricSlicer';
 import { CHART_BLACK, CHART_GRAY } from '@/components/charts/chartColors';
+import { cn } from '@/utils/cn';
+import { Trophy, Zap, HeartPulse, Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { Metric, PerformanceTrend, LoadTrend, RiskIndicator } from '@/types';
 
 interface AthleteAnalyticsProps {
@@ -33,13 +34,12 @@ export function AthleteAnalytics({
     .map((t) => ({
       date: new Date(t.date).toLocaleDateString('en-AU', { day: '2-digit', month: 'short' }),
       'Best Score': t.bestScore,
-      'Average': t.averageScore,
+      Average: t.averageScore,
     }));
 
   const selectedMetric = metrics.find((m) => m.id === selectedMetricId);
-  const latestBestScore = metricTrends.length > 0
-    ? metricTrends[metricTrends.length - 1]['Best Score']
-    : null;
+  const latestBestScore =
+    metricTrends.length > 0 ? metricTrends[metricTrends.length - 1]['Best Score'] : null;
 
   const loadChartData = loadTrends.map((l) => ({
     date: new Date(l.date).toLocaleDateString('en-AU', { day: '2-digit', month: 'short' }),
@@ -47,26 +47,143 @@ export function AthleteAnalytics({
     RPE: l.rpe,
   }));
 
+  const riskLevel = riskIndicator?.riskLevel || 'low';
+  const rpeColor =
+    avgRpeWeek <= 3 ? 'text-success' : avgRpeWeek <= 6 ? 'text-warning' : 'text-danger';
+
+  const trajectoryIcon =
+    riskIndicator?.trajectory === 'worsening' ? (
+      <TrendingUp className="h-4 w-4 text-danger" />
+    ) : riskIndicator?.trajectory === 'improving' ? (
+      <TrendingDown className="h-4 w-4 text-success" />
+    ) : (
+      <Minus className="h-3.5 w-3.5 text-gray-400" />
+    );
+
   return (
     <>
-      {/* Personal KPI Row */}
-      <div className="mt-6 mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard
-          label={selectedMetric ? `Best ${selectedMetric.name}` : 'Best Score'}
-          value={latestBestScore != null ? latestBestScore : '—'}
-        />
-        <KpiCard
-          label="Avg RPE (7d)"
-          value={avgRpeWeek || '—'}
-        />
-        <KpiCard
-          label="Days Lost"
-          value={totalDaysLost}
-        />
-        <KpiCard
-          label="ACWR"
-          value={riskIndicator?.acwr ?? '—'}
-        />
+      {/* KPI Row */}
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* Best Score */}
+        <div className="rounded-xl border border-border bg-white p-4">
+          <div className="mb-3 flex items-center gap-1.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50">
+              <Trophy className="h-3.5 w-3.5 text-amber-500" />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              Best Score
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-black">
+            {latestBestScore != null ? latestBestScore : '—'}
+          </p>
+          <p className="mt-0.5 text-xs text-gray-400">
+            {selectedMetric?.name || 'Select a metric'}
+          </p>
+        </div>
+
+        {/* Avg RPE */}
+        <div className="rounded-xl border border-border bg-white p-4">
+          <div className="mb-3 flex items-center gap-1.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+              <Zap className="h-3.5 w-3.5 text-blue-500" />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              Avg RPE
+            </span>
+          </div>
+          <p className={cn('text-2xl font-bold', rpeColor)}>{avgRpeWeek || '—'}</p>
+          <p className="mt-0.5 text-xs text-gray-400">7-day average</p>
+        </div>
+
+        {/* Days Lost */}
+        <div className="rounded-xl border border-border bg-white p-4">
+          <div className="mb-3 flex items-center gap-1.5">
+            <div
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-lg',
+                totalDaysLost > 0 ? 'bg-red-50' : 'bg-gray-50'
+              )}
+            >
+              <HeartPulse
+                className={cn('h-3.5 w-3.5', totalDaysLost > 0 ? 'text-danger' : 'text-gray-400')}
+              />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              Days Lost
+            </span>
+          </div>
+          <p className={cn('text-2xl font-bold', totalDaysLost > 0 ? 'text-danger' : 'text-black')}>
+            {totalDaysLost}
+          </p>
+          <p className="mt-0.5 text-xs text-gray-400">Injury time lost</p>
+        </div>
+
+        {/* ACWR — risk-colored card */}
+        <div
+          className={cn(
+            'rounded-xl border p-4',
+            riskLevel === 'high'
+              ? 'border-danger/30 bg-danger/5'
+              : riskLevel === 'moderate'
+                ? 'border-warning/30 bg-warning/5'
+                : 'border-border bg-white'
+          )}
+        >
+          <div className="mb-3 flex items-center gap-1.5">
+            <div
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-lg',
+                riskLevel === 'high'
+                  ? 'bg-danger/10'
+                  : riskLevel === 'moderate'
+                    ? 'bg-warning/10'
+                    : 'bg-emerald-50'
+              )}
+            >
+              <Activity
+                className={cn(
+                  'h-3.5 w-3.5',
+                  riskLevel === 'high'
+                    ? 'text-danger'
+                    : riskLevel === 'moderate'
+                      ? 'text-warning'
+                      : 'text-success'
+                )}
+              />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              ACWR
+            </span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p
+              className={cn(
+                'text-2xl font-bold',
+                riskLevel === 'high'
+                  ? 'text-danger'
+                  : riskLevel === 'moderate'
+                    ? 'text-warning'
+                    : 'text-black'
+              )}
+            >
+              {riskIndicator?.acwr ?? '—'}
+            </p>
+            {riskIndicator && trajectoryIcon}
+          </div>
+          <p
+            className={cn(
+              'mt-0.5 text-xs font-medium capitalize',
+              riskLevel === 'high'
+                ? 'text-danger'
+                : riskLevel === 'moderate'
+                  ? 'text-warning'
+                  : 'text-success'
+            )}
+          >
+            {riskLevel} risk
+          </p>
+        </div>
       </div>
 
       {/* Charts */}
@@ -94,9 +211,10 @@ export function AthleteAnalytics({
               height={250}
             />
           ) : (
-            <p className="py-8 text-center text-sm text-gray-400">
-              No performance data for this metric
-            </p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <Trophy className="mb-2 h-8 w-8 text-gray-200" />
+              <p className="text-sm text-gray-400">No performance data for this metric</p>
+            </div>
           )}
         </ChartCard>
 
@@ -105,13 +223,14 @@ export function AthleteAnalytics({
             <AnalyticsAreaChart
               data={loadChartData}
               xKey="date"
-              areas={[
-                { key: 'Training Load', color: CHART_BLACK, name: 'Load' },
-              ]}
+              areas={[{ key: 'Training Load', color: CHART_BLACK, name: 'Load' }]}
               height={250}
             />
           ) : (
-            <p className="py-8 text-center text-sm text-gray-400">No load data</p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <Activity className="mb-2 h-8 w-8 text-gray-200" />
+              <p className="text-sm text-gray-400">No load data recorded</p>
+            </div>
           )}
         </ChartCard>
       </div>
