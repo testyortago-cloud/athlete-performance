@@ -191,7 +191,7 @@ export function InjuriesClient({ injuries, athletes }: InjuriesClientProps) {
                   </span>
                 )}
               </h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-black">
                     {displayedInjuries.filter((i) => i.status !== 'resolved').length}

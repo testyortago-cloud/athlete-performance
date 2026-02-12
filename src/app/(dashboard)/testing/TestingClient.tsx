@@ -132,7 +132,7 @@ export function TestingClient({ sessions, totalAthletes }: TestingClientProps) {
           {/* Monthly session activity */}
           <Card className="mb-6">
             <h3 className="mb-3 text-sm font-semibold text-black">Session Activity (Last 6 Months)</h3>
-            <div className="flex items-end gap-2 h-24">
+            <div className="flex items-end gap-1 h-24 sm:gap-2">
               {stats.monthlyData.map((m) => (
                 <div key={m.month} className="flex flex-1 flex-col items-center gap-1">
                   <span className="text-[10px] font-semibold text-black">{m.count}</span>

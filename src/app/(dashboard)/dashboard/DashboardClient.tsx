@@ -254,7 +254,7 @@ export function DashboardClient({
                     : 'Welcome to your dashboard'}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => router.push('/load-monitoring')}
                 className="flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-xs font-medium text-white hover:bg-white/20 transition-colors"
@@ -302,14 +302,14 @@ export function DashboardClient({
               subtitle="Top 5 regions"
             >
               {injuryByRegion.length > 0 ? (
-                <div className="flex items-center gap-4">
-                  <div className="hidden sm:block shrink-0">
+                <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+                  <div className="shrink-0">
                     <BodyMap
                       data={injuryByRegion.map((d) => ({ region: d.bodyRegion, count: d.count }))}
                       compact
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 w-full">
                     <AnalyticsBarChart
                       data={filteredInjuryByRegion.map((d) => ({ name: d.bodyRegion, count: d.count }))}
                       xKey="name"

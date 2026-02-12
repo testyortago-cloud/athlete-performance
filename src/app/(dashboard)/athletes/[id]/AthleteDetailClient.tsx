@@ -543,7 +543,7 @@ export function AthleteDetailClient({
         <>
           {/* Summary strip */}
           {dailyLoads.length > 0 && (
-            <div className="mb-4 grid grid-cols-3 gap-3">
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-lg border border-border bg-white p-3 text-center">
                 <p className="text-lg font-bold text-black">{dailyLoads.length}</p>
                 <p className="text-[11px] text-gray-400">Sessions</p>

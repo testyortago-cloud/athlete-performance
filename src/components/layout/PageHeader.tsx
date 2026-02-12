@@ -33,9 +33,9 @@ export function PageHeader({ title, breadcrumbs, actions, className }: PageHeade
           ))}
         </nav>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-black">{title}</h1>
-        {actions && <div className="flex items-center gap-3">{actions}</div>}
+        {actions && <div className="flex flex-wrap items-center gap-2 sm:gap-3">{actions}</div>}
       </div>
     </div>
   );

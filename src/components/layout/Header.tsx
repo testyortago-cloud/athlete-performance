@@ -69,101 +69,124 @@ function NotificationPanel() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-96 rounded-lg border border-border bg-white shadow-xl">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-black">Notifications</h3>
-              {unreadCount > 0 && (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllRead}
-                  className="rounded p-1 text-gray-400 hover:text-black hover:bg-muted transition-colors"
-                  title="Mark all as read"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button
-                  onClick={clearAll}
-                  className="rounded p-1 text-gray-400 hover:text-danger hover:bg-muted transition-colors"
-                  title="Clear all notifications"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
+        <>
+          {/* Mobile backdrop */}
+          <div className="fixed inset-0 z-40 bg-black/30 sm:hidden" onClick={() => setOpen(false)} />
 
-          {/* Notification list */}
-          <div className="max-h-80 overflow-auto">
-            {notifications.length === 0 ? (
-              <div className="px-4 py-10 text-center">
-                <Bell className="mx-auto h-8 w-8 text-gray-200" />
-                <p className="mt-2 text-sm text-gray-400">No notifications</p>
+          {/* Panel — fixed full-width on mobile, absolute dropdown on desktop */}
+          <div
+            className={cn(
+              'z-50 rounded-lg border border-border bg-white shadow-xl',
+              // Mobile: fixed bottom sheet style below header
+              'fixed left-2 right-2 top-[calc(var(--header-height)+0.5rem)]',
+              // Desktop: absolute dropdown from bell icon
+              'sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-1 sm:w-96',
+            )}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-black">Notifications</h3>
+                {unreadCount > 0 && (
+                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-white">
+                    {unreadCount}
+                  </span>
+                )}
               </div>
-            ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={cn(
-                    'group flex items-start gap-3 border-b border-border px-4 py-3 last:border-0 transition-colors',
-                    !n.read && 'bg-muted/50',
-                    n.href && 'cursor-pointer hover:bg-muted'
-                  )}
-                  onClick={() => handleNotificationClick(n)}
+              <div className="flex items-center gap-1">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllRead}
+                    className="rounded p-1.5 text-gray-400 hover:text-black hover:bg-muted transition-colors"
+                    title="Mark all as read"
+                  >
+                    <Check className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    onClick={clearAll}
+                    className="rounded p-1.5 text-gray-400 hover:text-danger hover:bg-muted transition-colors"
+                    title="Clear all notifications"
+                  >
+                    <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                  </button>
+                )}
+                {/* Mobile close button */}
+                <button
+                  onClick={() => setOpen(false)}
+                  className="rounded p-1.5 text-gray-400 hover:text-black hover:bg-muted transition-colors sm:hidden"
+                  title="Close"
                 >
-                  <div className="mt-0.5 shrink-0">
-                    {severityIcon[n.severity]}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={cn('text-sm', !n.read ? 'font-medium text-black' : 'text-gray-700')}>
-                      {n.message}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-gray-400">{formatDate(n.date)}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {!n.read && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
-                        className="rounded p-0.5 text-gray-400 hover:text-black"
-                        title="Mark as read"
-                      >
-                        <Check className="h-3 w-3" />
-                      </button>
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
-                      className="rounded p-0.5 text-gray-400 hover:text-danger"
-                      title="Dismiss"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Notification list */}
+            <div className="max-h-[60vh] overflow-auto sm:max-h-80">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-10 text-center">
+                  <Bell className="mx-auto h-8 w-8 text-gray-200" />
+                  <p className="mt-2 text-sm text-gray-400">No notifications</p>
                 </div>
-              ))
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={cn(
+                      'flex items-start gap-3 border-b border-border px-4 py-3 last:border-0 transition-colors',
+                      !n.read && 'bg-muted/50',
+                      n.href && 'cursor-pointer active:bg-muted hover:bg-muted'
+                    )}
+                    onClick={() => handleNotificationClick(n)}
+                  >
+                    <div className="mt-0.5 shrink-0">
+                      {severityIcon[n.severity]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('text-sm', !n.read ? 'font-medium text-black' : 'text-gray-700')}>
+                        {n.message}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-gray-400">{formatDate(n.date)}</p>
+                    </div>
+                    {/* Always visible on mobile, hover-reveal on desktop */}
+                    <div className="flex shrink-0 items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
+                      {!n.read && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
+                          className="rounded p-1 text-gray-400 hover:text-black active:text-black"
+                          title="Mark as read"
+                        >
+                          <Check className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
+                        className="rounded p-1 text-gray-400 hover:text-danger active:text-danger"
+                        title="Dismiss"
+                      >
+                        <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            {notifications.length > 0 && (
+              <div className="border-t border-border px-4 py-2.5 sm:py-2">
+                <button
+                  onClick={() => { router.push('/settings'); setOpen(false); }}
+                  className="text-xs text-gray-400 hover:text-black transition-colors"
+                >
+                  Notification Settings
+                </button>
+              </div>
             )}
           </div>
-
-          {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="border-t border-border px-4 py-2">
-              <button
-                onClick={() => { router.push('/settings'); setOpen(false); }}
-                className="text-xs text-gray-400 hover:text-black transition-colors"
-              >
-                Notification Settings
-              </button>
-            </div>
-          )}
-        </div>
+        </>
       )}
     </div>
   );

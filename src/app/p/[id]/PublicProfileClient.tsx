@@ -203,12 +203,12 @@ export function PublicProfileClient({
       </nav>
 
       {/* ── Hero Section ─────────────────────────────────────── */}
-      <section className="relative overflow-hidden pb-20 pt-28">
+      <section className="relative overflow-hidden pb-16 pt-20 sm:pb-20 sm:pt-28">
         {/* Glow decoration */}
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <div
             className={cn(
-              'h-[500px] w-[500px] rounded-full opacity-[0.07] blur-[120px]',
+              'h-[300px] w-[300px] rounded-full opacity-[0.07] blur-[80px] sm:h-[500px] sm:w-[500px] sm:blur-[120px]',
               riskLevel === 'high' ? 'bg-red-500' : riskLevel === 'moderate' ? 'bg-amber-500' : 'bg-emerald-500'
             )}
           />
@@ -223,14 +223,14 @@ export function PublicProfileClient({
                   src={athlete.photo?.thumbnails?.large?.url ?? athlete.photo?.url}
                   name={athlete.name}
                   size="lg"
-                  className="!h-28 !w-28 text-4xl"
+                  className="!h-20 !w-20 text-3xl sm:!h-28 sm:!w-28 sm:text-4xl"
                 />
               </div>
             </div>
           </div>
 
           {/* Name */}
-          <h1 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="mt-6 text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
             {athlete.name}
           </h1>
 
@@ -311,7 +311,7 @@ export function PublicProfileClient({
         <div className="absolute -top-px left-0 right-0 h-16 bg-gray-950" />
         <div className="absolute left-0 right-0 top-0 h-16 rounded-t-[2rem] bg-white" />
 
-        <div className="relative mx-auto max-w-5xl px-6 pb-16 pt-10">
+        <div className="relative mx-auto max-w-5xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10">
           {/* ── Performance Charts ─────────────────────────── */}
           <SectionLabel>Performance</SectionLabel>
           <div className="mt-4 grid gap-6 md:grid-cols-2">
@@ -378,7 +378,7 @@ export function PublicProfileClient({
           </div>
 
           {/* ── Bio + Activity Grid ────────────────────────── */}
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
+          <div className="mt-8 grid gap-6 sm:mt-12 md:grid-cols-3">
             {/* Bio */}
             <div>
               <SectionLabel>Bio</SectionLabel>
@@ -494,10 +494,10 @@ function GlassCard({
   extra?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-5 backdrop-blur-xl">
-      <div className="mb-3 text-white/30">{icon}</div>
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3 backdrop-blur-xl sm:p-5">
+      <div className="mb-2 text-white/30 sm:mb-3">{icon}</div>
       <div className="flex items-baseline gap-1.5">
-        <p className={cn('text-3xl font-bold text-white', valueClassName)}>{value}</p>
+        <p className={cn('text-2xl font-bold text-white sm:text-3xl', valueClassName)}>{value}</p>
         {extra}
       </div>
       <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-white/30">

@@ -563,7 +563,7 @@ export function SessionDetailClient({
                                     <input
                                       type="number"
                                       step="any"
-                                      className="w-20 rounded border border-gray-300 px-2 py-1 text-center text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                                      className="w-16 rounded border border-gray-300 px-1.5 py-1 text-center text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:w-20 sm:px-2"
                                       value={state?.[field] ?? ''}
                                       onChange={(e) => {
                                         const val = e.target.value === '' ? null : Number(e.target.value);
@@ -576,7 +576,7 @@ export function SessionDetailClient({
                                         step="1"
                                         min="0"
                                         placeholder="reps"
-                                        className="w-16 rounded border border-gray-200 px-1.5 py-0.5 text-center text-xs text-gray-500 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                                        className="w-14 rounded border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-500 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:w-16 sm:px-1.5"
                                         value={state?.[repsField] ?? ''}
                                         onChange={(e) => {
                                           const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
@@ -648,11 +648,11 @@ export function SessionDetailClient({
           {showComparison && (
             <Card padding="none">
               <div className="border-b border-border px-6 py-3 bg-muted/40">
-                <div className="grid grid-cols-4 text-xs font-medium text-gray-500">
+                <div className="grid grid-cols-2 gap-y-1 text-xs font-medium text-gray-500 sm:grid-cols-4">
                   <span>Metric</span>
-                  <span className="text-center">Previous</span>
-                  <span className="text-center">Current</span>
-                  <span className="text-center">Change</span>
+                  <span className="hidden text-center sm:block">Previous</span>
+                  <span className="hidden text-center sm:block">Current</span>
+                  <span className="text-right sm:text-center">Change</span>
                 </div>
               </div>
               <div className="divide-y divide-border">
@@ -669,15 +669,15 @@ export function SessionDetailClient({
                       const isDeclined = delta != null && (isHigherBetter ? delta < 0 : delta > 0);
 
                       return (
-                        <div key={mwt.metric.id} className="grid grid-cols-4 items-center px-6 py-2.5 text-sm">
+                        <div key={mwt.metric.id} className="grid grid-cols-2 items-center px-4 py-2.5 text-sm sm:grid-cols-4 sm:px-6">
                           <span className="font-medium text-black">{mwt.metric.name}</span>
-                          <span className="text-center text-gray-500">
+                          <span className="hidden text-center text-gray-500 sm:block">
                             {prevScore != null ? prevScore : '—'}
                           </span>
-                          <span className="text-center font-semibold text-black">
+                          <span className="hidden text-center font-semibold text-black sm:block">
                             {currScore != null ? currScore : '—'}
                           </span>
-                          <span className="flex items-center justify-center gap-1">
+                          <span className="flex items-center justify-end gap-1 sm:justify-center">
                             {delta != null ? (
                               <>
                                 {isImproved && <ArrowUpRight className="h-3.5 w-3.5 text-success" />}

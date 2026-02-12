@@ -360,8 +360,8 @@ export function AthletesClient({ athletes, sports, programs, injuries, riskIndic
 
       {/* Floating bulk actions bar */}
       {selectedCount > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 shadow-lg">
+        <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 md:bottom-6">
+          <div className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2.5 shadow-lg sm:px-4">
             <span className="text-sm font-semibold text-black">
               {selectedCount} selected
             </span>
