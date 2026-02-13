@@ -11,7 +11,9 @@ import {
   computeLoadTrends,
   computeAthleteRiskIndicators,
   computeRiskAlerts,
+  computeWeekOverWeek,
 } from '@/lib/services/analyticsService';
+import { getWellnessCheckins } from '@/lib/services/wellnessService';
 import { DashboardClient } from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -84,9 +86,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // Chart data — use unfiltered athletes for risk indicators (need full load history for ACWR)
   const injuryByRegion = computeInjurySummaryByBodyRegion(injuries).slice(0, 5);
   const injuryByType = computeInjurySummaryByType(injuries);
-  const loadTrends = computeLoadTrends(dailyLoads, { days: dateStartStr ? Math.ceil((dateEnd.getTime() - (dateStart?.getTime() || 0)) / 86400000) : 30 });
+  const loadTrends = computeLoadTrends(dailyLoads, { days: dateStartStr ? Math.ceil((dateEnd.getTime() - (dateStart?.getTime() || 0)) / 86400000) : thresholds.defaultDays });
   const riskIndicators = computeAthleteRiskIndicators(athletes, allDailyLoads.filter((l) => filteredAthleteIds.has(l.athleteId)), allInjuries.filter((i) => filteredAthleteIds.has(i.athleteId)), thresholds);
   const alerts = computeRiskAlerts(riskIndicators, thresholds);
+
+  // Compute per-athlete load spikes for notification bell
+  const allWellnessCheckins = await getWellnessCheckins().catch(() => []);
+  const loadSpikeAthletes: string[] = [];
+  for (const athlete of athletes) {
+    const athleteLoads = allDailyLoads.filter((l) => l.athleteId === athlete.id);
+    const athleteWellness = allWellnessCheckins.filter((w) => w.athleteId === athlete.id);
+    const wow = computeWeekOverWeek(athleteLoads, athleteWellness, thresholds);
+    if (wow.loadSpikeAlert) {
+      loadSpikeAthletes.push(athlete.name);
+    }
+  }
 
   // Sparkline data — 7-day snapshots for KPI cards
   const sparklineAthletes: number[] = [];
@@ -144,6 +158,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         alerts={alerts}
         athletes={allAthletes}
         sports={sports}
+        injuries={allInjuries}
+        loadSpikeAthletes={loadSpikeAthletes}
         lastUpdated={new Date().toISOString()}
       />
     </Suspense>

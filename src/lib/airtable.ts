@@ -98,6 +98,10 @@ export async function deleteRecord(
   await getBase()(tableName).destroy(id);
 }
 
+export async function updateUserPassword(recordId: string, newPasswordHash: string) {
+  await updateRecord(TABLES.USERS, recordId, { PasswordHash: newPasswordHash });
+}
+
 export async function getUserByEmail(email: string) {
   const records = await getRecords(TABLES.USERS, {
     filterByFormula: `{Email} = '${email}'`,

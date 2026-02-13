@@ -21,7 +21,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { Clock, Activity, ClipboardList, HeartPulse, SlidersHorizontal, RotateCcw, Eye, EyeOff, Share2 } from 'lucide-react';
 import { CHART_BLACK, CHART_GRAY, CHART_DANGER, CHART_WARNING, CHART_SUCCESS } from '@/components/charts/chartColors';
 import { BodyMap } from '@/components/charts/BodyMap';
-import type { Athlete, Sport, InjurySummary, InjuryTypeSummary, LoadTrend, RiskIndicator, RiskAlert } from '@/types';
+import type { Athlete, Sport, Injury, InjurySummary, InjuryTypeSummary, LoadTrend, RiskIndicator, RiskAlert } from '@/types';
 
 interface DashboardClientProps {
   kpis: {
@@ -43,6 +43,8 @@ interface DashboardClientProps {
   alerts: RiskAlert[];
   athletes: Athlete[];
   sports: Sport[];
+  injuries: Injury[];
+  loadSpikeAthletes: string[];
   lastUpdated: string;
 }
 
@@ -180,22 +182,24 @@ export function DashboardClient({
   alerts,
   athletes,
   sports,
+  injuries,
+  loadSpikeAthletes,
   lastUpdated,
 }: DashboardClientProps) {
   const router = useRouter();
   const { crossFilter, setCrossFilter, clearCrossFilter } = useDashboardFilters();
   const { setNotifications } = useNotificationStore();
-  const { highRiskAlerts } = useNotificationPrefsStore();
+  const { highRiskAlerts, loadSpikeAlerts, injuryUpdates } = useNotificationPrefsStore();
 
-  // Populate notification bell with risk alerts (filtered by preferences)
+  // Populate notification bell based on all notification preferences
   useEffect(() => {
-    if (!highRiskAlerts) {
-      setNotifications([]);
-      return;
-    }
-    if (alerts.length > 0) {
-      setNotifications(
-        alerts.map((a, i) => ({
+    const notifications: import('@/stores/notificationStore').Notification[] = [];
+    const today = new Date().toISOString().split('T')[0];
+
+    // High risk ACWR alerts
+    if (highRiskAlerts) {
+      for (const a of alerts) {
+        notifications.push({
           id: `alert-${a.athleteName}-${a.severity}-${a.date}`,
           message: `${a.athleteName}: ${a.message}`,
           severity: a.severity === 'danger' ? 'danger' as const : 'warning' as const,
@@ -203,10 +207,44 @@ export function DashboardClient({
           athleteName: a.athleteName,
           date: a.date,
           read: false,
-        }))
-      );
+        });
+      }
     }
-  }, [alerts, setNotifications, highRiskAlerts]);
+
+    // Load spike alerts
+    if (loadSpikeAlerts) {
+      for (const athleteName of loadSpikeAthletes) {
+        notifications.push({
+          id: `load-spike-${athleteName}-${today}`,
+          message: `${athleteName}: Training load spike detected — week-over-week increase exceeds threshold`,
+          severity: 'warning' as const,
+          type: 'load-spike' as const,
+          athleteName,
+          date: today,
+          read: false,
+        });
+      }
+    }
+
+    // Injury update alerts
+    if (injuryUpdates) {
+      const activeInjuries = injuries.filter((i) => i.status !== 'resolved');
+      for (const injury of activeInjuries) {
+        const athleteName = injury.athleteName || athletes.find((a) => a.id === injury.athleteId)?.name || 'Unknown';
+        notifications.push({
+          id: `injury-${injury.id}`,
+          message: `${athleteName}: ${injury.status === 'active' ? 'Active' : injury.status === 'rehab' ? 'In rehab' : 'Monitoring'} ${injury.type} — ${injury.bodyRegion} (${injury.description})`,
+          severity: injury.status === 'active' ? 'danger' as const : 'warning' as const,
+          type: 'injury' as const,
+          athleteName,
+          date: injury.dateOccurred,
+          read: false,
+        });
+      }
+    }
+
+    setNotifications(notifications);
+  }, [alerts, setNotifications, highRiskAlerts, loadSpikeAlerts, injuryUpdates, loadSpikeAthletes, injuries, athletes]);
 
   // Filter injury data based on cross-filter
   const filteredInjuryByRegion = crossFilter.source === 'injuryType'

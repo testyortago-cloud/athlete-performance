@@ -74,11 +74,11 @@ export default async function AthleteDetailPage({ params }: AthletePageProps) {
   }
   performanceTrends.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // Compute load trends for this athlete
-  const loadTrends = computeAthleteLoadTrends(dailyLoads, { days: 30 });
-
-  // Compute risk indicator for this athlete
+  // Fetch threshold settings
   const thresholds = await getThresholdSettings();
+
+  // Compute load trends for this athlete
+  const loadTrends = computeAthleteLoadTrends(dailyLoads, { days: thresholds.defaultDays });
   const riskIndicators = computeAthleteRiskIndicators([athlete], dailyLoads, injuries, thresholds);
   const riskIndicator = riskIndicators[0] || null;
 
@@ -102,10 +102,10 @@ export default async function AthleteDetailPage({ params }: AthletePageProps) {
   const trainingStreaks = computeTrainingStreaks(dailyLoads);
 
   // Phase 3: Coach Intelligence
-  const loadZones = computeLoadZones(dailyLoads, { days: 30 });
-  const weekOverWeek = computeWeekOverWeek(dailyLoads, wellnessCheckins);
+  const loadZones = computeLoadZones(dailyLoads, { days: thresholds.defaultDays });
+  const weekOverWeek = computeWeekOverWeek(dailyLoads, wellnessCheckins, thresholds);
   const compliance = computeComplianceRate(dailyLoads);
-  const riskFlags = computeRiskFlags(riskIndicator, wellnessCheckins, dailyLoads);
+  const riskFlags = computeRiskFlags(riskIndicator, wellnessCheckins, dailyLoads, thresholds);
 
   // Phase 5: Goals, Journal, Badges
   const [goals, journalEntries] = await Promise.all([

@@ -223,12 +223,14 @@ export function computeAthleteRiskIndicators(
     let trajectory: 'improving' | 'stable' | 'worsening' = 'stable';
     if (prevAcuteLoad > 0) {
       const loadChangePercent = ((acuteLoad - prevAcuteLoad) / prevAcuteLoad) * 100;
-      if (acwr > 1.3) {
+      const moderateThreshold = thresholds?.acwrModerate ?? DEFAULT_THRESHOLDS.acwrModerate;
+      const spikeThreshold = thresholds?.loadSpikePercent ?? DEFAULT_THRESHOLDS.loadSpikePercent;
+      if (acwr > moderateThreshold) {
         // When ACWR is high, decreasing load is improving
         trajectory = loadChangePercent < -10 ? 'improving' : loadChangePercent > 10 ? 'worsening' : 'stable';
       } else {
         // When ACWR is in safe range, stable or slight increase is fine
-        trajectory = loadChangePercent > 30 ? 'worsening' : loadChangePercent < -20 ? 'improving' : 'stable';
+        trajectory = loadChangePercent > spikeThreshold ? 'worsening' : loadChangePercent < -20 ? 'improving' : 'stable';
       }
     }
 
@@ -655,7 +657,8 @@ export interface WeekOverWeek {
 
 export function computeWeekOverWeek(
   dailyLoads: DailyLoad[],
-  wellnessCheckins: WellnessCheckin[]
+  wellnessCheckins: WellnessCheckin[],
+  thresholds?: Partial<ThresholdSettings>
 ): WeekOverWeek {
   const now = Date.now();
   const sevenDaysAgo = now - 7 * 86400000;
@@ -728,7 +731,7 @@ export function computeWeekOverWeek(
           ? pctChange(currentWeek.avgReadiness, previousWeek.avgReadiness)
           : null,
     },
-    loadSpikeAlert: loadChangePercent !== null && loadChangePercent > 30,
+    loadSpikeAlert: loadChangePercent !== null && loadChangePercent > (thresholds?.loadSpikePercent ?? DEFAULT_THRESHOLDS.loadSpikePercent),
   };
 }
 
@@ -791,26 +794,30 @@ export interface RiskFlag {
 export function computeRiskFlags(
   riskIndicator: RiskIndicator | null,
   wellnessCheckins: WellnessCheckin[],
-  dailyLoads: DailyLoad[]
+  dailyLoads: DailyLoad[],
+  thresholds?: Partial<ThresholdSettings>
 ): RiskFlag[] {
   const flags: RiskFlag[] = [];
+  const acwrHigh = thresholds?.acwrHigh ?? DEFAULT_THRESHOLDS.acwrHigh;
+  const acwrModerate = thresholds?.acwrModerate ?? DEFAULT_THRESHOLDS.acwrModerate;
+  const spikePercent = thresholds?.loadSpikePercent ?? DEFAULT_THRESHOLDS.loadSpikePercent;
 
-  // Rule 1: ACWR > 1.5 → High workload spike risk
-  if (riskIndicator && riskIndicator.acwr > 1.5) {
+  // Rule 1: ACWR > high threshold → High workload spike risk
+  if (riskIndicator && riskIndicator.acwr > acwrHigh) {
     flags.push({
       id: 'acwr-high',
       type: 'acwr',
       severity: 'danger',
       title: 'High Workload Spike Risk',
-      message: `ACWR is ${riskIndicator.acwr} (threshold: 1.5). Consider reducing training load to allow recovery.`,
+      message: `ACWR is ${riskIndicator.acwr} (threshold: ${acwrHigh}). Consider reducing training load to allow recovery.`,
     });
-  } else if (riskIndicator && riskIndicator.acwr > 1.3) {
+  } else if (riskIndicator && riskIndicator.acwr > acwrModerate) {
     flags.push({
       id: 'acwr-moderate',
       type: 'acwr',
       severity: 'warning',
       title: 'Elevated Workload Ratio',
-      message: `ACWR is ${riskIndicator.acwr} (approaching 1.5 threshold). Monitor load carefully.`,
+      message: `ACWR is ${riskIndicator.acwr} (approaching ${acwrHigh} threshold). Monitor load carefully.`,
     });
   }
 
@@ -855,13 +862,13 @@ export function computeRiskFlags(
 
   if (prevWeekLoad > 0) {
     const loadIncrease = ((currentWeekLoad - prevWeekLoad) / prevWeekLoad) * 100;
-    if (loadIncrease > 30) {
+    if (loadIncrease > spikePercent) {
       flags.push({
         id: 'overtraining-risk',
         type: 'overtraining',
         severity: 'warning',
         title: 'Overtraining Risk — Load Spike',
-        message: `Training load increased ${Math.round(loadIncrease)}% vs last week (threshold: 30%). Gradual progression recommended.`,
+        message: `Training load increased ${Math.round(loadIncrease)}% vs last week (threshold: ${spikePercent}%). Gradual progression recommended.`,
       });
     }
   }

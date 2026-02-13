@@ -195,13 +195,12 @@ export default function LoginPage() {
                 />
                 <span className="text-xs text-gray-500">Remember me</span>
               </label>
-              <button
-                type="button"
+              <a
+                href="/forgot-password"
                 className="text-xs text-gray-500 hover:text-white/80 transition-colors"
-                onClick={() => {/* Placeholder for forgot password flow */}}
               >
                 Forgot password?
-              </button>
+              </a>
             </div>
 
             <button
