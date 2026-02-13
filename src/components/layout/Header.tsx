@@ -15,8 +15,12 @@ function NotificationPanel() {
   const router = useRouter();
   const { notifications, markRead, markAllRead, removeNotification, clearAll } = useNotificationStore();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const unreadCount = useNotificationStore((s) => s.unreadCount());
+  const storeUnreadCount = useNotificationStore((s) => s.unreadCount());
+  const unreadCount = mounted ? storeUnreadCount : 0;
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

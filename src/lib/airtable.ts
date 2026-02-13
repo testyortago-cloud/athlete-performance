@@ -21,6 +21,9 @@ export const TABLES = {
   INJURIES: 'Injuries',
   DAILY_LOAD: 'Daily_Load',
   SETTINGS: 'Settings',
+  WELLNESS_CHECKINS: 'Wellness_Checkins',
+  GOALS: 'Goals',
+  JOURNAL_ENTRIES: 'Journal_Entries',
 } as const;
 
 export type TableName = (typeof TABLES)[keyof typeof TABLES];

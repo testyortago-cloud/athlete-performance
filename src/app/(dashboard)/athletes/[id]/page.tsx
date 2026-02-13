@@ -7,9 +7,21 @@ import { getDailyLoads } from '@/lib/services/dailyLoadService';
 import { getTestingSessions, getTrialDataBySession } from '@/lib/services/testingSessionService';
 import { getMetricsBySport } from '@/lib/services/metricService';
 import { getThresholdSettings } from '@/lib/services/settingsService';
+import { getWellnessCheckins } from '@/lib/services/wellnessService';
+import { getGoals } from '@/lib/services/goalService';
+import { getJournalEntries } from '@/lib/services/journalService';
 import {
   computeAthleteLoadTrends,
   computeAthleteRiskIndicators,
+  computePersonalRecords,
+  computeWeeklyVolumeSummary,
+  computeRadarData,
+  computeTrainingStreaks,
+  computeLoadZones,
+  computeWeekOverWeek,
+  computeComplianceRate,
+  computeRiskFlags,
+  computeAchievementBadges,
 } from '@/lib/services/analyticsService';
 import { AthleteDetailClient } from './AthleteDetailClient';
 import type { PerformanceTrend } from '@/types';
@@ -28,12 +40,13 @@ export default async function AthleteDetailPage({ params }: AthletePageProps) {
   if (!athlete) notFound();
 
   // Non-critical fetches — gracefully fall back to empty arrays on failure
-  const [sports, programs, injuries, dailyLoads, testingSessions] = await Promise.all([
+  const [sports, programs, injuries, dailyLoads, testingSessions, wellnessCheckins] = await Promise.all([
     getSports().catch(() => []),
     getPrograms().catch(() => []),
     getInjuries({ athleteId: id }).catch(() => []),
     getDailyLoads({ athleteId: id }).catch(() => []),
     getTestingSessions({ athleteId: id }).catch(() => []),
+    getWellnessCheckins({ athleteId: id }).catch(() => []),
   ]);
 
   const sport = sports.find((s) => s.id === athlete.sportId);
@@ -80,6 +93,27 @@ export default async function AthleteDetailPage({ params }: AthletePageProps) {
   // Total days lost from injuries
   const totalDaysLost = injuries.reduce((sum, i) => sum + (i.daysLost ?? 0), 0);
 
+  // Compute personal records and weekly volume
+  const personalRecords = computePersonalRecords(performanceTrends, metrics);
+  const weeklyVolume = computeWeeklyVolumeSummary(dailyLoads);
+
+  // Compute radar chart data and training streaks
+  const radarData = computeRadarData(performanceTrends, metrics);
+  const trainingStreaks = computeTrainingStreaks(dailyLoads);
+
+  // Phase 3: Coach Intelligence
+  const loadZones = computeLoadZones(dailyLoads, { days: 30 });
+  const weekOverWeek = computeWeekOverWeek(dailyLoads, wellnessCheckins);
+  const compliance = computeComplianceRate(dailyLoads);
+  const riskFlags = computeRiskFlags(riskIndicator, wellnessCheckins, dailyLoads);
+
+  // Phase 5: Goals, Journal, Badges
+  const [goals, journalEntries] = await Promise.all([
+    getGoals({ athleteId: id }).catch(() => []),
+    getJournalEntries({ athleteId: id }).catch(() => []),
+  ]);
+  const badges = computeAchievementBadges(dailyLoads, personalRecords, wellnessCheckins, compliance, trainingStreaks);
+
   return (
     <AthleteDetailClient
       athlete={{ ...athlete, sportName: sport?.name || athlete.sportName || 'Unknown', programName: program?.name || athlete.programName || undefined }}
@@ -94,6 +128,18 @@ export default async function AthleteDetailPage({ params }: AthletePageProps) {
       riskIndicator={riskIndicator}
       avgRpeWeek={avgRpeWeek}
       totalDaysLost={totalDaysLost}
+      wellnessCheckins={wellnessCheckins}
+      personalRecords={personalRecords}
+      weeklyVolume={weeklyVolume}
+      radarData={radarData}
+      trainingStreaks={trainingStreaks}
+      loadZones={loadZones}
+      weekOverWeek={weekOverWeek}
+      compliance={compliance}
+      riskFlags={riskFlags}
+      goals={goals}
+      journalEntries={journalEntries}
+      badges={badges}
     />
   );
 }

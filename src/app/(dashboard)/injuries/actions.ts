@@ -78,7 +78,18 @@ export async function updateInjuryStatusAction(id: string, status: string) {
   }
 
   try {
-    await updateInjury(id, { status: status as 'active' | 'rehab' | 'monitoring' | 'resolved' });
+    const updates: Partial<{ status: 'active' | 'rehab' | 'monitoring' | 'resolved'; dateResolved: string | null }> = {
+      status: status as 'active' | 'rehab' | 'monitoring' | 'resolved',
+    };
+
+    // Auto-set dateResolved when marking as resolved, clear it when reopening
+    if (status === 'resolved') {
+      updates.dateResolved = new Date().toISOString().split('T')[0];
+    } else {
+      updates.dateResolved = null;
+    }
+
+    await updateInjury(id, updates);
     revalidatePath('/injuries');
     revalidatePath(`/injuries/${id}`);
     return { success: true };

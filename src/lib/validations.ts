@@ -99,4 +99,34 @@ export type TestingSessionInput = z.infer<typeof testingSessionSchema>;
 export type TrialDataInput = z.infer<typeof trialDataSchema>;
 export type InjuryInput = z.infer<typeof injurySchema>;
 export type DailyLoadInput = z.infer<typeof dailyLoadSchema>;
+export const wellnessCheckinSchema = z.object({
+  athleteId: z.string().min(1, 'Athlete is required'),
+  date: z.string().min(1, 'Date is required'),
+  sleepHours: z.coerce.number().min(0).max(12, 'Sleep hours must be 0-12'),
+  sleepQuality: z.coerce.number().int().min(1).max(5),
+  soreness: z.coerce.number().int().min(1).max(5),
+  fatigue: z.coerce.number().int().min(1).max(5),
+  mood: z.coerce.number().int().min(1).max(5),
+  hydration: z.coerce.number().int().min(1).max(5),
+});
+
+export const goalSchema = z.object({
+  athleteId: z.string().min(1, 'Athlete is required'),
+  metricId: z.string().min(1, 'Metric is required'),
+  metricName: z.string().min(1, 'Metric name is required'),
+  targetValue: z.coerce.number({ message: 'Target value is required' }),
+  direction: z.enum(['higher', 'lower']),
+  deadline: z.string().nullable().default(null),
+});
+
+export const journalEntrySchema = z.object({
+  athleteId: z.string().min(1, 'Athlete is required'),
+  date: z.string().min(1, 'Date is required'),
+  content: z.string().min(1, 'Content is required').max(2000),
+  tags: z.string().default(''),
+});
+
 export type ThresholdSettingsInput = z.infer<typeof thresholdSettingsSchema>;
+export type WellnessCheckinInput = z.infer<typeof wellnessCheckinSchema>;
+export type GoalInput = z.infer<typeof goalSchema>;
+export type JournalEntryInput = z.infer<typeof journalEntrySchema>;

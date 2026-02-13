@@ -16,8 +16,9 @@ import { DashboardClient } from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage() {
-  const [athletes, sports, injuries, dailyLoads, sessions, thresholds] = await Promise.all([
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const params = await searchParams;
+  const [allAthletes, sports, allInjuries, allDailyLoads, allSessions, thresholds] = await Promise.all([
     getAthletes().catch(() => []),
     getSports().catch(() => []),
     getInjuries().catch(() => []),
@@ -26,11 +27,51 @@ export default async function DashboardPage() {
     getThresholdSettings(),
   ]);
 
+  // Parse filter params
+  const filterSportIds = params.sports ? params.sports.split(',') : [];
+  const filterAthleteIds = params.athletes ? params.athletes.split(',') : [];
+  const preset = params.preset;
+
+  // Date range from preset
+  const now = new Date();
+  let dateStart: Date | null = null;
+  let dateEnd: Date = now;
+  if (preset) {
+    switch (preset) {
+      case 'last7': dateStart = new Date(now.getTime() - 7 * 86400000); break;
+      case 'last30': dateStart = new Date(now.getTime() - 30 * 86400000); break;
+      case 'last90': dateStart = new Date(now.getTime() - 90 * 86400000); break;
+      case 'season': dateStart = new Date(now.getFullYear(), 0, 1); break;
+    }
+  }
+  const dateStartStr = dateStart ? dateStart.toISOString().split('T')[0] : null;
+  const dateEndStr = dateEnd.toISOString().split('T')[0];
+
+  // Filter athletes by sport and athlete selection
+  let athletes = allAthletes;
+  if (filterSportIds.length > 0) {
+    athletes = athletes.filter((a) => filterSportIds.includes(a.sportId));
+  }
+  if (filterAthleteIds.length > 0) {
+    athletes = athletes.filter((a) => filterAthleteIds.includes(a.id));
+  }
+  const filteredAthleteIds = new Set(athletes.map((a) => a.id));
+
+  // Filter injuries, loads, sessions by filtered athletes and date range
+  let injuries = allInjuries.filter((i) => filteredAthleteIds.has(i.athleteId));
+  let dailyLoads = allDailyLoads.filter((l) => filteredAthleteIds.has(l.athleteId));
+  let sessions = allSessions.filter((s) => filteredAthleteIds.has(s.athleteId));
+
+  if (dateStartStr) {
+    injuries = injuries.filter((i) => i.dateOccurred >= dateStartStr && i.dateOccurred <= dateEndStr);
+    dailyLoads = dailyLoads.filter((l) => l.date >= dateStartStr && l.date <= dateEndStr);
+    sessions = sessions.filter((s) => s.date >= dateStartStr && s.date <= dateEndStr);
+  }
+
   // KPIs
   const activeAthletes = athletes.filter((a) => a.status === 'active').length;
   const activeInjuries = injuries.filter((i) => i.status !== 'resolved').length;
 
-  const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
   const recentLoads = dailyLoads.filter((l) => new Date(l.date) >= sevenDaysAgo);
   const avgLoad = recentLoads.length > 0
@@ -40,11 +81,11 @@ export default async function DashboardPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sessionsThisMonth = sessions.filter((s) => new Date(s.date) >= startOfMonth).length;
 
-  // Chart data
+  // Chart data — use unfiltered athletes for risk indicators (need full load history for ACWR)
   const injuryByRegion = computeInjurySummaryByBodyRegion(injuries).slice(0, 5);
   const injuryByType = computeInjurySummaryByType(injuries);
-  const loadTrends = computeLoadTrends(dailyLoads, { days: 30 });
-  const riskIndicators = computeAthleteRiskIndicators(athletes, dailyLoads, injuries, thresholds);
+  const loadTrends = computeLoadTrends(dailyLoads, { days: dateStartStr ? Math.ceil((dateEnd.getTime() - (dateStart?.getTime() || 0)) / 86400000) : 30 });
+  const riskIndicators = computeAthleteRiskIndicators(athletes, allDailyLoads.filter((l) => filteredAthleteIds.has(l.athleteId)), allInjuries.filter((i) => filteredAthleteIds.has(i.athleteId)), thresholds);
   const alerts = computeRiskAlerts(riskIndicators, thresholds);
 
   // Sparkline data — 7-day snapshots for KPI cards
@@ -57,10 +98,8 @@ export default async function DashboardPage() {
     const day = new Date(now.getTime() - i * 86400000);
     const dayStr = day.toISOString().split('T')[0];
 
-    // Count active athletes on that day (approximate — use total active)
     sparklineAthletes.push(activeAthletes);
 
-    // Count active injuries on that day
     const injCount = injuries.filter((inj) => {
       const occurred = inj.dateOccurred <= dayStr;
       const resolved = inj.dateResolved ? inj.dateResolved <= dayStr : false;
@@ -68,14 +107,12 @@ export default async function DashboardPage() {
     }).length;
     sparklineInjuries.push(injCount);
 
-    // Average load on that day
     const dayLoads = dailyLoads.filter((l) => l.date === dayStr);
     const dayAvg = dayLoads.length > 0
       ? Math.round(dayLoads.reduce((s, l) => s + l.trainingLoad, 0) / dayLoads.length)
       : 0;
     sparklineLoad.push(dayAvg);
 
-    // Sessions count up to that day in the month
     const dayDate = new Date(dayStr);
     const monthStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), 1);
     const sessCount = sessions.filter((s) => {
@@ -105,7 +142,7 @@ export default async function DashboardPage() {
         loadTrends={loadTrends}
         riskIndicators={riskIndicators}
         alerts={alerts}
-        athletes={athletes}
+        athletes={allAthletes}
         sports={sports}
         lastUpdated={new Date().toISOString()}
       />
