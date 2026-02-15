@@ -126,7 +126,31 @@ export const journalEntrySchema = z.object({
   tags: z.string().default(''),
 });
 
+export const userCreateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  role: z.enum(['admin', 'coach', 'athlete']),
+});
+
+export const userUpdateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['admin', 'coach', 'athlete']),
+});
+
+export const passwordResetSchema = z.object({
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
 export type ThresholdSettingsInput = z.infer<typeof thresholdSettingsSchema>;
 export type WellnessCheckinInput = z.infer<typeof wellnessCheckinSchema>;
 export type GoalInput = z.infer<typeof goalSchema>;
 export type JournalEntryInput = z.infer<typeof journalEntrySchema>;
+export type UserCreateInput = z.infer<typeof userCreateSchema>;
+export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
+export type PasswordResetInput = z.infer<typeof passwordResetSchema>;

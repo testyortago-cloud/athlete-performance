@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,17 +13,26 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useReportPrefsStore, ALL_SECTIONS, REPORT_SECTION_LABELS, type ReportSection, type ReportFrequency } from '@/stores/reportPrefsStore';
 import { HelpTip } from '@/components/ui/HelpTip';
 import { cn } from '@/utils/cn';
-import { Settings, Activity, Bell, Database, RotateCcw, HelpCircle, FileText, Plus, X, Check, Mail } from 'lucide-react';
+import { Modal, ConfirmModal } from '@/components/ui/Modal';
+import { Badge } from '@/components/ui/Badge';
+import { UserForm } from '@/components/forms/UserForm';
+import { ResetPasswordForm } from '@/components/forms/ResetPasswordForm';
+import { deleteUserAction } from './userActions';
+import { Settings, Activity, Bell, Database, RotateCcw, HelpCircle, FileText, Plus, X, Check, Mail, UserCog, Pencil, KeyRound, Trash2 } from 'lucide-react';
 import type { ThresholdSettings } from '@/types';
 import { DEFAULT_THRESHOLDS } from '@/types';
+import type { UserRecord } from '@/lib/services/userService';
 
 interface SettingsClientProps {
   thresholds: ThresholdSettings;
+  users?: UserRecord[];
+  isAdmin?: boolean;
+  currentUserId?: string;
 }
 
-type SettingsTab = 'general' | 'risk' | 'notifications' | 'reports' | 'data';
+type SettingsTab = 'general' | 'risk' | 'notifications' | 'reports' | 'data' | 'users';
 
-const TABS: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
+const BASE_TABS: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { key: 'general', label: 'General', icon: <Settings className="h-4 w-4" /> },
   { key: 'risk', label: 'Risk Thresholds', icon: <Activity className="h-4 w-4" /> },
   { key: 'notifications', label: 'Notifications', icon: <Bell className="h-4 w-4" /> },
@@ -30,8 +40,11 @@ const TABS: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { key: 'data', label: 'Data', icon: <Database className="h-4 w-4" /> },
 ];
 
-export function SettingsClient({ thresholds }: SettingsClientProps) {
+const USERS_TAB = { key: 'users' as SettingsTab, label: 'Users', icon: <UserCog className="h-4 w-4" /> };
+
+export function SettingsClient({ thresholds, users = [], isAdmin = false, currentUserId }: SettingsClientProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const TABS = isAdmin ? [...BASE_TABS, USERS_TAB] : BASE_TABS;
   const [acwrModerate, setAcwrModerate] = useState(thresholds.acwrModerate);
   const [acwrHigh, setAcwrHigh] = useState(thresholds.acwrHigh);
   const [loadSpikePercent, setLoadSpikePercent] = useState(thresholds.loadSpikePercent);
@@ -42,6 +55,29 @@ export function SettingsClient({ thresholds }: SettingsClientProps) {
   const onboarding = useOnboardingStore();
   const reportPrefs = useReportPrefsStore();
   const [newRecipient, setNewRecipient] = useState('');
+
+  // User management state
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
+  const [resetPasswordUser, setResetPasswordUser] = useState<UserRecord | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserRecord | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const router = useRouter();
+
+  async function handleDeleteUser() {
+    if (!deletingUser) return;
+    setDeleteLoading(true);
+    const result = await deleteUserAction(deletingUser.id);
+    if (result.error) {
+      addToast(result.error, 'error');
+    } else {
+      addToast('User deleted successfully', 'success');
+      router.refresh();
+    }
+    setDeleteLoading(false);
+    setDeletingUser(null);
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -707,6 +743,180 @@ export function SettingsClient({ thresholds }: SettingsClientProps) {
                 </div>
               </div>
             </Card>
+          )}
+
+          {activeTab === 'users' && isAdmin && (
+            <div className="space-y-6">
+              {/* Summary stats */}
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <Card>
+                  <p className="text-xs font-medium text-gray-500">Total Users</p>
+                  <p className="mt-1 text-2xl font-bold text-black">{users.length}</p>
+                </Card>
+                <Card>
+                  <p className="text-xs font-medium text-gray-500">Admins</p>
+                  <p className="mt-1 text-2xl font-bold text-black">
+                    {users.filter((u) => u.role === 'admin').length}
+                  </p>
+                </Card>
+                <Card>
+                  <p className="text-xs font-medium text-gray-500">Coaches</p>
+                  <p className="mt-1 text-2xl font-bold text-black">
+                    {users.filter((u) => u.role === 'coach').length}
+                  </p>
+                </Card>
+                <Card>
+                  <p className="text-xs font-medium text-gray-500">Athletes</p>
+                  <p className="mt-1 text-2xl font-bold text-black">
+                    {users.filter((u) => u.role === 'athlete').length}
+                  </p>
+                </Card>
+              </div>
+
+              {/* User table */}
+              <Card>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-black">Platform Users</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Manage user accounts and permissions.
+                    </p>
+                  </div>
+                  <Button
+                    icon={<Plus className="h-3.5 w-3.5" />}
+                    onClick={() => setShowCreateUser(true)}
+                  >
+                    Add User
+                  </Button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left">
+                        <th className="pb-3 font-medium text-gray-500">Name</th>
+                        <th className="pb-3 font-medium text-gray-500">Email</th>
+                        <th className="pb-3 font-medium text-gray-500">Role</th>
+                        <th className="pb-3 font-medium text-gray-500 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {users.map((user) => {
+                        const isSelf = user.id === currentUserId;
+                        const roleBadgeVariant = user.role === 'admin' ? 'danger' : user.role === 'coach' ? 'warning' : 'default';
+                        return (
+                          <tr key={user.id} className="group">
+                            <td className="py-3 font-medium text-black">
+                              {user.name}
+                              {isSelf && (
+                                <span className="ml-2 text-xs text-gray-400">(you)</span>
+                              )}
+                            </td>
+                            <td className="py-3 text-gray-600">{user.email}</td>
+                            <td className="py-3">
+                              <Badge variant={roleBadgeVariant}>
+                                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                              </Badge>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingUser(user)}
+                                  className="rounded-md p-1.5 text-gray-400 hover:bg-muted hover:text-black transition-colors"
+                                  title="Edit user"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setResetPasswordUser(user)}
+                                  className="rounded-md p-1.5 text-gray-400 hover:bg-muted hover:text-black transition-colors"
+                                  title="Reset password"
+                                >
+                                  <KeyRound className="h-4 w-4" />
+                                </button>
+                                {!isSelf && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeletingUser(user)}
+                                    className="rounded-md p-1.5 text-gray-400 hover:bg-danger/10 hover:text-danger transition-colors"
+                                    title="Delete user"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {users.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-gray-400">
+                            No users found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+
+              {/* Create User Modal */}
+              <Modal
+                isOpen={showCreateUser}
+                onClose={() => setShowCreateUser(false)}
+                title="Create User"
+              >
+                <UserForm
+                  onSuccess={() => setShowCreateUser(false)}
+                  currentUserId={currentUserId}
+                />
+              </Modal>
+
+              {/* Edit User Modal */}
+              <Modal
+                isOpen={!!editingUser}
+                onClose={() => setEditingUser(null)}
+                title="Edit User"
+              >
+                {editingUser && (
+                  <UserForm
+                    initialData={editingUser}
+                    onSuccess={() => setEditingUser(null)}
+                    currentUserId={currentUserId}
+                  />
+                )}
+              </Modal>
+
+              {/* Reset Password Modal */}
+              <Modal
+                isOpen={!!resetPasswordUser}
+                onClose={() => setResetPasswordUser(null)}
+                title="Reset Password"
+              >
+                {resetPasswordUser && (
+                  <ResetPasswordForm
+                    userId={resetPasswordUser.id}
+                    userName={resetPasswordUser.name}
+                    onSuccess={() => setResetPasswordUser(null)}
+                  />
+                )}
+              </Modal>
+
+              {/* Delete Confirmation Modal */}
+              <ConfirmModal
+                isOpen={!!deletingUser}
+                onClose={() => setDeletingUser(null)}
+                onConfirm={handleDeleteUser}
+                title="Delete User"
+                message={`Are you sure you want to delete ${deletingUser?.name}? This action cannot be undone. The user will no longer be able to log in.`}
+                confirmText="Delete User"
+                loading={deleteLoading}
+                variant="danger"
+              />
+            </div>
           )}
         </div>
       </div>

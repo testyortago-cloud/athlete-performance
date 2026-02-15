@@ -296,6 +296,7 @@ export function Header() {
           <NotificationPanel />
 
           {/* User menu */}
+          <div data-tour="user-menu">
           <Dropdown
             align="right"
             trigger={
@@ -322,6 +323,7 @@ export function Header() {
               Sign Out
             </DropdownItem>
           </Dropdown>
+          </div>
         </div>
       </div>
     </header>

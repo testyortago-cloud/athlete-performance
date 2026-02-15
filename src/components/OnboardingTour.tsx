@@ -49,6 +49,12 @@ const TOUR_STEPS: TourStep[] = [
     description: 'Press Ctrl+K to open the command palette and jump to any page or athlete instantly.',
     position: 'bottom',
   },
+  {
+    target: 'user-menu',
+    title: 'Your Profile',
+    description: 'Click your avatar to access your profile, where you can update your name and change your password.',
+    position: 'bottom',
+  },
 ];
 
 export function OnboardingTour() {
