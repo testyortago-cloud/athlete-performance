@@ -1,4 +1,5 @@
 import 'next-auth';
+import 'next-auth/jwt';
 import { DefaultSession } from 'next-auth';
 
 declare module 'next-auth' {
@@ -15,7 +16,7 @@ declare module 'next-auth' {
   }
 }
 
-declare module '@auth/core/jwt' {
+declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: 'admin' | 'coach' | 'athlete';
