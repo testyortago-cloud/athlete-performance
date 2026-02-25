@@ -31,7 +31,12 @@ export async function createAthleteAction(formData: FormData) {
     const photo = formData.get('photo') as File | null;
     let photoUrl: string | undefined;
     if (photo && photo.size > 0) {
-      photoUrl = await uploadAthletePhoto(photo, parsed.data.name);
+      try {
+        photoUrl = await uploadAthletePhoto(photo, parsed.data.name);
+      } catch (uploadErr) {
+        console.error('Photo upload failed:', uploadErr);
+        return { error: 'Failed to upload photo. Please try again without a photo or check Firebase configuration.' };
+      }
     }
 
     await createAthlete({ ...parsed.data, photoUrl });
@@ -68,7 +73,12 @@ export async function updateAthleteAction(id: string, formData: FormData) {
     const photo = formData.get('photo') as File | null;
     let photoUrl: string | undefined;
     if (photo && photo.size > 0) {
-      photoUrl = await uploadAthletePhoto(photo, parsed.data.name);
+      try {
+        photoUrl = await uploadAthletePhoto(photo, parsed.data.name);
+      } catch (uploadErr) {
+        console.error('Photo upload failed:', uploadErr);
+        return { error: 'Failed to upload photo. Please try again without a photo or check Firebase configuration.' };
+      }
     }
 
     // Pass programId explicitly (empty string clears it, undefined skips it)
@@ -77,6 +87,7 @@ export async function updateAthleteAction(id: string, formData: FormData) {
     revalidatePath(`/athletes/${id}`);
     return { success: true };
   } catch (e) {
+    console.error('updateAthlete error:', e);
     return { error: e instanceof Error ? e.message : 'Failed to update athlete' };
   }
 }

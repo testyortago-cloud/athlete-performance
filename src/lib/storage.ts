@@ -15,8 +15,9 @@ export async function uploadAthletePhoto(file: File, athleteName: string): Promi
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `profiles/${sanitized}/${Date.now()}.${ext}`;
 
+  const bucket = getBucket();
   const buffer = Buffer.from(await file.arrayBuffer());
-  const fileRef = getBucket().file(path);
+  const fileRef = bucket.file(path);
 
   await fileRef.save(buffer, {
     metadata: { contentType: file.type },
@@ -24,5 +25,5 @@ export async function uploadAthletePhoto(file: File, athleteName: string): Promi
 
   await fileRef.makePublic();
 
-  return `https://storage.googleapis.com/${getBucket().name}/${path}`;
+  return `https://storage.googleapis.com/${bucket.name}/${path}`;
 }
