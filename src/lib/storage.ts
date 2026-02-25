@@ -1,6 +1,5 @@
-import { createServerSupabaseClient } from './supabase';
+import { getBucket } from './firebase';
 
-const BUCKET = 'athlete-photos';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -12,20 +11,18 @@ export async function uploadAthletePhoto(file: File, athleteName: string): Promi
     throw new Error('File too large. Maximum size is 5MB.');
   }
 
-  const supabase = createServerSupabaseClient();
   const sanitized = athleteName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${sanitized}/${Date.now()}.${ext}`;
+  const path = `profiles/${sanitized}/${Date.now()}.${ext}`;
 
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: file.type,
-    upsert: false,
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const fileRef = getBucket().file(path);
+
+  await fileRef.save(buffer, {
+    metadata: { contentType: file.type },
   });
 
-  if (error) {
-    throw new Error(`Upload failed: ${error.message}`);
-  }
+  await fileRef.makePublic();
 
-  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return urlData.publicUrl;
+  return `https://storage.googleapis.com/${getBucket().name}/${path}`;
 }
